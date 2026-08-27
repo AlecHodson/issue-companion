@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Issue Companion — Complete Childcare Group</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2321; --paper:#F5EFE2; --paper-2:#EDE4D1;
+  --purple:#3B1F6A; --purple-deep:#2A1450; --purple-mid:#5a2f85; --purple-tint:#EDE8F5;
+  --amber:#B4842C; --amber-tint:#F3E6CC; --amber-bright:#f0a93f;
+  --line:#D8CDB5; --white:#FFFDF8;
+  --green:#2E7D32; --green-bg:#E8F5E9;
+  --amber-urg:#E65100; --amber-urg-bg:#FFF3E0;
+  --orange:#C15A00; --orange-bg:#FBE9DD;
+  --red:#B71C1C; --red-bg:#FFEBEE;
+  --grey:#6b6178; --grey-bg:#F0EDF5;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;} html,body{margin:0;padding:0;}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0;color:var(--purple-deep);}
+a{color:var(--purple);}
+
+/* ===== IDENTITY MODAL ===== */
+#identityModal{position:fixed;inset:0;background:rgba(27,18,40,0.82);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#identityModal.active{display:flex;}
+.id-box{background:var(--white);border-radius:16px;padding:36px 32px;max-width:440px;width:90%;box-shadow:0 24px 60px -10px rgba(27,18,40,0.45);}
+.id-box h2{font-size:22px;margin-bottom:6px;color:var(--purple-deep);}
+.id-box p{font-size:13.5px;color:var(--grey);margin:0 0 20px;line-height:1.55;}
+.id-box select{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:#fff;margin-bottom:10px;}
+.id-box select:focus{outline:2px solid var(--purple-mid);outline-offset:1px;}
+.id-error{display:none;font-size:12.5px;color:var(--red);margin-bottom:10px;}
+.id-btn{width:100%;padding:13px;background:var(--purple-deep);color:#fff;border:none;border-radius:9px;font-family:var(--font-body);font-size:14.5px;font-weight:600;cursor:pointer;}
+.id-btn:hover{background:var(--purple-mid);}
+.id-logo{font-family:var(--font-mono);font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px;}
+
+/* ===== LAYOUT ===== */
+#app{display:flex;min-height:100vh;}
+#sidebar{width:260px;flex-shrink:0;background:var(--purple-deep);color:var(--paper);padding:24px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+#sidebar .brand{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--white);line-height:1.25;margin-bottom:3px;}
+#sidebar .brand-sub{font-size:11px;color:#B8A8D0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:24px;}
+#sidebar .who-box{font-size:12px;color:#C4B4DC;margin-bottom:18px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;}
+#sidebar .who-box strong{color:var(--white);display:block;margin-bottom:2px;}
+nav.navlist{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;}
+nav.navlist button{all:unset;cursor:pointer;padding:9px 12px;border-radius:8px;font-size:13.5px;color:#C4B4DC;display:flex;align-items:center;gap:9px;transition:background .12s;}
+nav.navlist button:hover{background:rgba(255,255,255,0.08);color:var(--white);}
+nav.navlist button.active{background:rgba(255,255,255,0.13);color:var(--white);font-weight:600;}
+nav.navlist button .nav-icon{font-size:15px;width:20px;text-align:center;}
+.nav-section{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8A78A0;margin:14px 0 6px 12px;}
+#sidebar .companion-link{margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:20px;}
+#sidebar .companion-link a{font-size:12px;color:#B8A8D0;text-decoration:none;display:flex;align-items:center;gap:6px;}
+#sidebar .companion-link a:hover{color:var(--white);}
+.signout-btn{all:unset;cursor:pointer;font-size:12px;color:#8A78A0;margin-top:12px;display:block;}
+.signout-btn:hover{color:#C4B4DC;}
+
+/* ===== MAIN CONTENT ===== */
+#main{flex:1;overflow-y:auto;min-height:100vh;}
+.page{display:none;padding:36px 40px 80px;}
+.page.active{display:block;}
+
+/* ===== PAGE HEADER ===== */
+.page-header{margin-bottom:32px;}
+.page-eyebrow{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--purple-mid);margin-bottom:8px;}
+.page-header h1{font-size:clamp(24px,3vw,34px);line-height:1.1;margin-bottom:8px;}
+.page-header p{font-size:14px;color:var(--grey);max-width:600px;margin:0;}
+
+/* ===== CARDS / PANELS ===== */
+.card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:20px;}
+.card-title{font-size:17px;margin-bottom:4px;}
+.card-sub{font-size:13px;color:var(--grey);margin-bottom:20px;}
+
+/* ===== CATEGORY TILES ===== */
+.tiles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;}
+.cat-tile{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:15px 16px 14px;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;}
+.cat-tile:hover{border-color:var(--purple-mid);transform:translateY(-1px);box-shadow:0 6px 18px -10px rgba(58,31,106,.35);}
+.cat-tile.selected{border-color:var(--amber-bright);background:var(--amber-tint);}
+.cat-tile .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--purple-mid);text-transform:uppercase;margin-bottom:7px;display:block;}
+.cat-tile h3{font-family:var(--font-body);font-weight:600;font-size:13.5px;margin:0 0 3px;color:var(--ink);}
+.cat-tile p{font-size:12px;color:var(--grey);margin:0;line-height:1.4;}
+
+/* ===== FORM ELEMENTS ===== */
+.field-label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--purple-deep);margin-bottom:8px;}
+textarea.desc-box{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:10px;padding:13px 14px;font-family:var(--font-body);font-size:14px;resize:vertical;color:var(--ink);background:var(--white);}
+textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.char-hint{font-size:11.5px;color:var(--grey);margin-top:4px;}
+
+/* ===== URGENCY PILLS ===== */
+.urgency-row{display:flex;gap:9px;margin:18px 0 22px;flex-wrap:wrap;}
+.urgency-pill{flex:1;min-width:100px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s;color:var(--grey);}
+.urgency-pill[data-level="low"]:hover,.urgency-pill[data-level="low"].active{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.urgency-pill[data-level="medium"]:hover,.urgency-pill[data-level="medium"].active{border-color:var(--amber-urg);background:var(--amber-urg-bg);color:var(--amber-urg);}
+.urgency-pill[data-level="high"]:hover,.urgency-pill[data-level="high"].active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange);}
+.urgency-pill[data-level="critical"]:hover,.urgency-pill[data-level="critical"].active{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+.urgency-pill .pill-sub{font-size:10.5px;font-weight:400;display:block;margin-top:2px;opacity:.8;}
+
+/* ===== BUTTONS ===== */
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.btn-primary{background:var(--purple-deep);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:background .15s;}
+.btn-primary:hover{background:var(--purple-mid);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:none;border:1.5px solid var(--line);border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;color:var(--grey);font-family:var(--font-body);}
+.btn-ghost:hover{border-color:var(--purple-mid);color:var(--purple-deep);}
+.btn-danger{background:var(--red);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
+.btn-danger:hover{background:#8B0000;}
+.btn-green{background:var(--green);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
+.btn-green:hover{background:#1B5E20;}
+
+/* ===== COPILOT RESPONSE ===== */
+.copilot-panel{margin-top:26px;border-top:1.5px dashed var(--line);padding-top:24px;display:none;animation:fadein .3s ease;}
+.copilot-panel.show{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.copilot-badge{display:inline-flex;align-items:center;gap:7px;background:var(--purple-deep);color:var(--amber-bright);font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;padding:6px 12px;border-radius:20px;margin-bottom:16px;}
+.copilot-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--amber-bright);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:.3;}100%{opacity:1;}}
+
+.discrepancy-alert{background:var(--red-bg);border:1px solid #F5C6C6;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a1c1c;}
+.discrepancy-alert strong{display:block;margin-bottom:3px;color:var(--red);}
+.discrepancy-alert.amber{background:var(--amber-urg-bg);border-color:#FFCC80;color:#7a3800;}
+.discrepancy-alert.amber strong{color:var(--amber-urg);}
+
+.copilot-block{margin-bottom:18px;}
+.copilot-block h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--purple-mid);margin:0 0 8px;font-weight:700;font-family:var(--font-body);}
+.policy-extract{background:var(--grey-bg);border-left:3px solid var(--purple-mid);padding:12px 15px;font-size:13.5px;line-height:1.55;border-radius:0 8px 8px 0;color:var(--ink);}
+.policy-source{font-size:11.5px;color:var(--grey);margin-top:6px;font-family:var(--font-mono);}
+.steps-list{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--ink);}
+.steps-list li{margin-bottom:3px;}
+
+.decision-row{display:flex;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line);flex-wrap:wrap;}
+.decision-card{flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:12px;padding:16px;}
+.decision-card h5{margin:0 0 5px;font-size:14px;font-weight:700;font-family:var(--font-body);}
+.decision-card p{margin:0 0 12px;font-size:12.5px;color:var(--grey);line-height:1.5;}
+.decision-card.resolve{border-color:var(--green);}
+.decision-card.resolve h5{color:var(--green);}
+.decision-card.escalate{border-color:var(--red);}
+.decision-card.escalate h5{color:var(--red);}
+
+/* ===== CONFIRMATION SCREEN ===== */
+.confirm-screen{display:none;text-align:center;padding:32px 20px;}
+.confirm-screen.show{display:block;}
+.confirm-icon{font-size:52px;margin-bottom:16px;}
+.confirm-screen h2{font-size:22px;margin-bottom:8px;}
+.confirm-screen p{font-size:14px;color:var(--grey);max-width:480px;margin:0 auto 20px;}
+.notified-list{background:var(--grey-bg);border-radius:10px;padding:14px 16px;text-align:left;max-width:400px;margin:0 auto 20px;font-size:13px;}
+.notified-list li{margin-bottom:5px;color:var(--ink);}
+
+/* ===== ISSUE LOG TABLE ===== */
+.log-table{width:100%;border-collapse:collapse;font-size:13px;}
+.log-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--grey);font-weight:600;}
+.log-table td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;}
+.log-table tr:hover td{background:var(--paper-2);}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-mono);}
+.badge-low{background:var(--green-bg);color:var(--green);}
+.badge-medium{background:var(--amber-urg-bg);color:var(--amber-urg);}
+.badge-high{background:var(--orange-bg);color:var(--orange);}
+.badge-critical{background:var(--red-bg);color:var(--red);}
+.badge-open{background:var(--purple-tint);color:var(--purple-mid);}
+.badge-actioned{background:var(--amber-tint);color:var(--amber);}
+.badge-closed{background:var(--green-bg);color:var(--green);}
+.badge-escalated{background:var(--red-bg);color:var(--red);}
+
+/* ===== KPI DASHBOARD ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
+.kpi-card .num{font-family:var(--font-display);font-size:28px;font-weight:600;color:var(--purple-deep);}
+.kpi-card .lbl{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.kpi-card .delta{font-size:11.5px;margin-top:6px;font-weight:600;}
+.delta-up{color:var(--red);}
+.delta-down{color:var(--green);}
+
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.bar-row .lbl{width:170px;font-size:12.5px;color:var(--ink);flex-shrink:0;}
+.bar-track{flex:1;height:9px;background:var(--grey-bg);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;background:var(--purple-mid);}
+.bar-row .val{width:32px;text-align:right;font-size:12px;color:var(--grey);font-family:var(--font-mono);}
+
+/* ===== SEARCH BAR ===== */
+.search-wrap{position:relative;margin-bottom:24px;}
+.search-wrap input{width:100%;padding:12px 16px 12px 42px;border:1.5px solid var(--line);border-radius:10px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--white);}
+.search-wrap input:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.search-wrap .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--grey);}
+
+/* ===== CRITICAL PANIC BUTTON ===== */
+.panic-btn{position:fixed;right:24px;bottom:24px;background:var(--red);color:#fff;border:none;border-radius:30px;padding:14px 20px;font-family:var(--font-body);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px -8px rgba(183,28,28,.55);display:flex;align-items:center;gap:9px;z-index:100;}
+.panic-btn:hover{background:#8B0000;}
+.panic-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
+
+/* ===== NOTICE BOXES ===== */
+.notice{background:var(--purple-tint);border-left:3px solid var(--purple-mid);border-radius:0 8px 8px 0;padding:12px 15px;font-size:13px;color:var(--ink);margin-bottom:16px;}
+.notice.amber{background:var(--amber-tint);border-color:var(--amber);}
+.notice.red{background:var(--red-bg);border-color:var(--red);}
+
+/* ===== ROUTING MATRIX ===== */
+.routing-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.routing-table th{text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--grey);}
+.routing-table td{padding:9px 12px;border-bottom:1px solid var(--line);}
+.routing-table tr:hover td{background:var(--paper-2);}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(27,18,40,0.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--white);border-radius:14px;padding:28px 30px;max-width:520px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 50px -10px rgba(27,18,40,.4);}
+.modal-box h3{margin-bottom:8px;}
+.modal-box p{font-size:13.5px;color:var(--grey);margin-bottom:16px;}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--grey);line-height:1;}
+
+/* ===== RESOLUTION FORM ===== */
+.resolution-form{margin-top:16px;}
+.resolution-form textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--font-body);font-size:13.5px;resize:vertical;}
+.resolution-form textarea:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+
+/* ===== LOADING SPINNER ===== */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:7px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:800px){
+  #sidebar{display:none;}
+  .tiles-grid{grid-template-columns:repeat(2,1fr);}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .page{padding:24px 18px 80px;}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ===== IDENTITY MODAL ===== -->
+<div id="identityModal" class="active">
+  <div class="id-box">
+    <div class="id-logo">Complete Childcare Group</div>
+    <h2>Issue Companion</h2>
+    <p>Log, triage and resolve operational issues. Select your nursery or role to continue.</p>
+    <select id="idSelect"><option value="">— Select your nursery or name —</option></select>
+    <div class="id-error" id="idError">Please select your nursery or name.</div>
+    <button class="id-btn" onclick="confirmIdentity()">Sign in</button>
+  </div>
+</div>
+
+<!-- ===== CRITICAL ESCALATION MODAL ===== -->
+<div class="modal-overlay" id="criticalModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCriticalModal()">&#x2715;</button>
+    <h3 style="color:var(--red);">&#9888; Critical Escalation</h3>
+    <p>This will send an <strong>immediate high-priority alert</strong> to Alec Hodson (Group CEO / DPO) and the relevant central function lead, with in-app notification, Teams message, and SMS.</p>
+    <div class="notice red" style="margin-bottom:20px;">Response target: <strong>within 2 hours.</strong> Use only when there is an immediate risk to children, staff, or regulatory standing.</div>
+    <label class="field-label">Confirm: describe the immediate risk in one sentence</label>
+    <div class="resolution-form">
+      <textarea id="criticalNote" placeholder="e.g. Fire door self-closer failed — room unprotected, engineer not available until tomorrow."></textarea>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-danger" onclick="confirmCriticalEscalation()">Send critical alert now</button>
+      <button class="btn-ghost" onclick="closeCriticalModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESOLUTION MODAL ===== -->
+<div class="modal-overlay" id="resolveModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('resolveModal').classList.remove('active')">&#x2715;</button>
+    <h3>Close issue</h3>
+    <p>Add a resolution note before closing. This is required for the audit log.</p>
+    <div class="resolution-form">
+      <textarea id="resolveNote" placeholder="What was done? What was the outcome? Any follow-up required?"></textarea>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-green" onclick="confirmResolve()">Close issue</button>
+      <button class="btn-ghost" onclick="document.getElementById('resolveModal').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP SHELL ===== -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="brand">Issue Companion</div>
+    <div class="brand-sub">Operations &amp; Compliance</div>
+    <div class="who-box" id="whoBox">
+      <strong id="sessionUserName">—</strong>
+      <span id="sessionNursery"></span>
+    </div>
+    <div class="nav-section">Main</div>
+    <nav class="navlist" id="navlist">
+      <button class="active" data-page="log" onclick="showPage('log',this)"><span class="nav-icon">&#128221;</span> Log an issue</button>
+      <button data-page="myissues" onclick="showPage('myissues',this)"><span class="nav-icon">&#128203;</span> My issues</button>
+      <button data-page="guidance" onclick="showPage('guidance',this)"><span class="nav-icon">&#128270;</span> Quick guidance</button>
+    </nav>
+    <div class="nav-section" id="mgmtNavSection" style="display:none;">Management</div>
+    <nav class="navlist" id="mgmtNavlist" style="display:none;">
+      <button data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span> Dashboard</button>
+      <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> All issues</button>
+      <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
+    </nav>
+    <div class="companion-link">
+      <a href="https://alechodson.github.io/hr-companion/" target="_blank">&#8592; HR Companion</a>
+    </div>
+    <button class="signout-btn" onclick="clearIdentity()">Sign out</button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- ===== LOG AN ISSUE ===== -->
+    <div class="page active" id="page-log">
+      <div class="page-header">
+        <div class="page-eyebrow">Issue Companion — Operations, Quality &amp; Compliance</div>
+        <h1>Log it. Get guidance. Escalate only when it matters.</h1>
+        <p>Describe what's happening, rate how urgent it feels, and Copilot checks your rating against policy before deciding where it needs to go.</p>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="searchBox" placeholder='Search before logging — e.g. "fire door", "expired DBS", "ratio breach"' oninput="handleSearch(this.value)">
+      </div>
+      <div id="searchResults" style="display:none;margin-bottom:20px;"></div>
+
+      <!-- Category tiles -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+        <h2 style="font-size:18px;">Choose a category</h2>
+        <span style="font-size:12px;color:var(--grey);">9 categories</span>
+      </div>
+      <div class="tiles-grid" id="catTiles">
+        <div class="cat-tile" data-cat="01" data-name="Safeguarding — operational" onclick="selectCat(this)"><span class="tag">01</span><h3>Safeguarding — operational</h3><p>Building security, visitor access, site perimeter</p></div>
+        <div class="cat-tile" data-cat="02" data-name="Health &amp; safety" onclick="selectCat(this)"><span class="tag">02</span><h3>Health &amp; safety</h3><p>Accidents, near misses, hazards, fire, food safety</p></div>
+        <div class="cat-tile" data-cat="03" data-name="Ratios &amp; cover" onclick="selectCat(this)"><span class="tag">03</span><h3>Ratios &amp; cover</h3><p>Operational staffing coverage on the day</p></div>
+        <div class="cat-tile" data-cat="04" data-name="Standards &amp; quality" onclick="selectCat(this)"><span class="tag">04</span><h3>Standards &amp; quality</h3><p>Observed practice, EYFS compliance gaps</p></div>
+        <div class="cat-tile" data-cat="05" data-name="Premises &amp; maintenance" onclick="selectCat(this)"><span class="tag">05</span><h3>Premises &amp; maintenance</h3><p>Building defects, equipment failure</p></div>
+        <div class="cat-tile" data-cat="06" data-name="Compliance documentation" onclick="selectCat(this)"><span class="tag">06</span><h3>Compliance documentation</h3><p>Missing DBS checks, expired certifications</p></div>
+        <div class="cat-tile" data-cat="07" data-name="Data protection incident" onclick="selectCat(this)"><span class="tag">07</span><h3>Data protection incident</h3><p>Lost device, misdirected email, access issue</p></div>
+        <div class="cat-tile" data-cat="08" data-name="Complaint — compliance" onclick="selectCat(this)"><span class="tag">08</span><h3>Complaint — compliance</h3><p>Parent or family complaint with a compliance angle</p></div>
+        <div class="cat-tile" data-cat="09" data-name="Other" onclick="selectCat(this)"><span class="tag">09</span><h3>Other</h3><p>Anything that doesn't fit above</p></div>
+      </div>
+
+      <!-- Log form -->
+      <div class="card" id="logCard">
+        <p class="card-title" id="logCardTitle">Log an issue</p>
+        <p class="card-sub" id="logCardSub">Select a category above, then describe what's happening.</p>
+
+        <label class="field-label">What's happening?</label>
+        <textarea class="desc-box" id="descBox" placeholder="Describe the issue in as much detail as you can. The more you give, the better the guidance."></textarea>
+        <div class="char-hint" id="charHint">0 characters</div>
+
+        <label class="field-label" style="margin-top:20px;">How urgent does this feel to you?</label>
+        <div class="urgency-row" id="urgencyRow">
+          <div class="urgency-pill" data-level="low" onclick="selectUrgency(this)">Low<span class="pill-sub">Monitor only</span></div>
+          <div class="urgency-pill" data-level="medium" onclick="selectUrgency(this)">Medium<span class="pill-sub">This week</span></div>
+          <div class="urgency-pill" data-level="high" onclick="selectUrgency(this)">High<span class="pill-sub">24–48 hrs</span></div>
+          <div class="urgency-pill" data-level="critical" onclick="selectUrgency(this)">Critical<span class="pill-sub">Immediate risk</span></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="copilotBtn" onclick="runCopilot()">Get Copilot guidance</button>
+          <button class="btn-ghost" onclick="saveDraft()">Save as draft</button>
+        </div>
+
+        <!-- Copilot response -->
+        <div class="copilot-panel" id="copilotPanel">
+          <div class="copilot-badge"><span class="dot"></span> <span id="copilotBadgeText">COPILOT ASSESSMENT</span></div>
+
+          <div id="discrepancyAlert" style="display:none;"></div>
+
+          <div class="copilot-block">
+            <h4>Relevant policy</h4>
+            <div class="policy-extract" id="policyText"></div>
+            <div class="policy-source" id="policySource"></div>
+          </div>
+
+          <div class="copilot-block">
+            <h4>Sensible first steps</h4>
+            <ol class="steps-list" id="stepsList"></ol>
+          </div>
+
+          <div class="copilot-block" id="copilotRatingBlock">
+            <h4>Copilot severity assessment</h4>
+            <div id="copilotRatingText" style="font-size:13.5px;color:var(--ink);"></div>
+          </div>
+
+          <div class="decision-row">
+            <div class="decision-card resolve">
+              <h5>&#10003; Actioned, monitoring</h5>
+              <p>Interim steps taken. Keeping this open and logged — no escalation needed right now.</p>
+              <button class="btn-green" onclick="markActioned()">Mark as actioned</button>
+            </div>
+            <div class="decision-card escalate">
+              <h5>&#9650; Escalate this issue</h5>
+              <p id="escalateDesc">Route to the appropriate lead based on category and severity.</p>
+              <button class="btn-danger" id="escalateBtn" onclick="escalateIssue()">Escalate now</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation screen -->
+        <div class="confirm-screen" id="confirmScreen">
+          <div class="confirm-icon" id="confirmIcon">&#10003;</div>
+          <h2 id="confirmTitle">Issue logged</h2>
+          <p id="confirmMsg"></p>
+          <ul class="notified-list" id="notifiedList"></ul>
+          <button class="btn-primary" onclick="resetForm()">Log another issue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MY ISSUES ===== -->
+    <div class="page" id="page-myissues">
+      <div class="page-header">
+        <div class="page-eyebrow">Issue log</div>
+        <h1>My issues</h1>
+        <p>All issues logged from your setting. Click any row to view details or add a resolution note.</p>
+      </div>
+      <div class="card" id="myIssuesCard">
+        <div id="myIssuesContent"></div>
+      </div>
+    </div>
+
+    <!-- ===== QUICK GUIDANCE ===== -->
+    <div class="page" id="page-guidance">
+      <div class="page-header">
+        <div class="page-eyebrow">Reference</div>
+        <h1>Quick guidance</h1>
+        <p>Key contacts, severity indicators, and what to do when Copilot can't find a match.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">When to escalate — at a glance</p>
+        <p class="card-sub">Use this as a quick reference before submitting an issue.</p>
+        <table class="routing-table">
+          <tr><th>Rating</th><th>What it means</th><th>Response target</th><th>Who's notified</th></tr>
+          <tr><td><span class="badge badge-low">Low</span></td><td>No immediate risk. Monitor and review.</td><td>7 days to resolve</td><td>You only (logged)</td></tr>
+          <tr><td><span class="badge badge-medium">Medium</span></td><td>Needs attention this week.</td><td>3 working days</td><td>Area Manager (if escalated)</td></tr>
+          <tr><td><span class="badge badge-high">High</span></td><td>Needs action within 24–48 hours.</td><td>48 hours</td><td>Area Manager + category lead</td></tr>
+          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Alec Hodson + category lead + SMS</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Critical severity indicators — know these</p>
+        <p class="card-sub">If any of these phrases apply to your situation, the issue is likely Critical.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
+          <div><strong style="color:var(--red);">Health &amp; Safety</strong><br>Fire door failed, gas leak, flood, structural damage, child injured, ambulance, RIDDOR, evacuation, intruder, lock-in/out</div>
+          <div><strong style="color:var(--red);">Safeguarding</strong><br>Child missing, disclosure, allegation against staff, police, social services, LADO, MASH</div>
+          <div><strong style="color:var(--red);">Ratios</strong><br>Ratio breach, below ratio, uncovered room, no qualified staff in room</div>
+          <div><strong style="color:var(--red);">Data Protection</strong><br>Personal data shared externally, lost device with data, misdirected email with personal data, ICO notification required</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Key contacts</p>
+        <table class="routing-table">
+          <tr><th>Role</th><th>Person</th><th>Covers</th></tr>
+          <tr><td>Group CEO / DPO</td><td>Alec Hodson</td><td>All Critical escalations, Data Protection, Estates</td></tr>
+          <tr><td>Director (CCO)</td><td>Emma McIntyre</td><td>Ratios &amp; cover, Standards &amp; quality, Complaints</td></tr>
+          <tr><td>Compliance Lead</td><td>Ellie Richards</td><td>Safeguarding, H&amp;S, Standards, Compliance docs</td></tr>
+          <tr><td>Area Manager — BlueWater</td><td>Pav Bilkhu</td><td>Abacus, Bees Knees, Northumberland, Smart Tots, Saltway, Cedars, Boot Farm, Lower Earley, Our Den</td></tr>
+          <tr><td>Area Manager — Greenwood</td><td>Leanne Maynard</td><td>Bramley Wood, Finchampstead, Happitots, Hazebrouck, Kingsclere, Merrydale, Stepping Stones, Woosehill</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <p class="card-title">If Copilot can't find a match</p>
+        <p style="font-size:13.5px;color:var(--ink);">When Copilot flags a <strong>content gap</strong> (no confident policy match), the issue is still logged and you'll be told to contact your Area Manager directly. These gaps are reviewed monthly to update the knowledge base — so your log still helps even if guidance is limited today.</p>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD (management) ===== -->
+    <div class="page" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>Dashboard</h1>
+        <p>Group-wide issue summary. Data updates as issues are logged.</p>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:16px;">Issues by category</p>
+        <div id="barChart"></div>
+      </div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:16px;">Open critical &amp; high issues</p>
+        <div id="criticalList"></div>
+      </div>
+    </div>
+
+    <!-- ===== ALL ISSUES (management) ===== -->
+    <div class="page" id="page-allissues">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>All issues</h1>
+        <p>Every issue logged across all settings. Filter by severity or status.</p>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="filterSeverity" onchange="renderAllIssues()" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select id="filterStatus" onchange="renderAllIssues()" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;">
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="actioned">Actioned</option>
+            <option value="escalated">Escalated</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <div id="allIssuesContent"></div>
+      </div>
+    </div>
+
+    <!-- ===== ROUTING MATRIX (management) ===== -->
+    <div class="page" id="page-routing">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>Routing matrix</h1>
+        <p>Who receives escalation notifications per category and severity.</p>
+      </div>
+      <div class="card">
+        <table class="routing-table">
+          <tr><th>#</th><th>Category</th><th>Tier 2 Lead (High)</th><th>Tier 3 Lead (Critical)</th></tr>
+          <tr><td>01</td><td>Safeguarding — operational</td><td>Area Manager + Ellie Richards</td><td>Alec Hodson</td></tr>
+          <tr><td>02</td><td>Health &amp; safety</td><td>Area Manager + Ellie Richards</td><td>Alec Hodson</td></tr>
+          <tr><td>03</td><td>Ratios &amp; cover</td><td>Area Manager</td><td>Emma McIntyre</td></tr>
+          <tr><td>04</td><td>Standards &amp; quality</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre</td></tr>
+          <tr><td>05</td><td>Premises &amp; maintenance</td><td>Area Manager</td><td>Alec Hodson (Estates)</td></tr>
+          <tr><td>06</td><td>Compliance documentation</td><td>Ellie Richards</td><td>Alec Hodson</td></tr>
+          <tr><td>07</td><td>Data protection incident</td><td>Alec Hodson (DPO)</td><td>Alec Hodson</td></tr>
+          <tr><td>08</td><td>Complaint — compliance</td><td>Area Manager + Emma McIntyre</td><td>Alec Hodson</td></tr>
+          <tr><td>09</td><td>Other</td><td>Area Manager</td><td>Alec Hodson</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <p class="card-title">Zone assignment</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;">
+          <div>
+            <strong>BlueWater — Pav Bilkhu</strong>
+            <ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;">
+              <li>Abacus Day Nursery</li><li>Bees Knees Day Nursery</li><li>Northumberland Day Nursery</li>
+              <li>Smart Tots Day Nursery</li><li>Saltway Day Nursery</li><li>Cedars Day Nursery</li>
+              <li>Cedars @ Boot Farm</li><li>Lower Earley Day Nursery</li><li>Our Den @ Hillside</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Greenwood — Leanne Maynard</strong>
+            <ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;">
+              <li>Bramley Wood Day Nursery</li><li>Hazebrouck Day Nursery</li><li>Kingsclere Day Nursery</li>
+              <li>Merrydale Day Nursery</li><li>Stepping Stones Day Nursery</li><li>Happitots Day Nursery</li>
+              <li>Finchampstead Day Nursery</li><li>Woosehill Day Nursery</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Panic button -->
+<button class="panic-btn" id="panicBtn" onclick="triggerCriticalEscalation()"><span class="panic-dot"></span> Critical escalation</button>
+
+<script>
+/* ================================================================
+   DATA
+   ================================================================ */
+const NURSERY_LIST = [
+  {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Bees Knees Day Nursery",nursery:"Bees Knees Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Northumberland Day Nursery",nursery:"Northumberland Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Smart Tots Day Nursery",nursery:"Smart Tots Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Saltway Day Nursery",nursery:"Saltway Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Cedars Day Nursery",nursery:"Cedars Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Cedars @ Boot Farm",nursery:"Cedars @ Boot Farm",zone:"BlueWater",isHR:false},
+  {name:"Lower Earley Day Nursery",nursery:"Lower Earley Day Nursery",zone:"BlueWater",isHR:false},
+  {name:"Our Den @ Hillside",nursery:"Our Den @ Hillside",zone:"BlueWater",isHR:false},
+  {name:"Bramley Wood Day Nursery",nursery:"Bramley Wood Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Hazebrouck Day Nursery",nursery:"Hazebrouck Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Kingsclere Day Nursery",nursery:"Kingsclere Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Merrydale Day Nursery",nursery:"Merrydale Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Stepping Stones Day Nursery",nursery:"Stepping Stones Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Happitots Day Nursery",nursery:"Happitots Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Finchampstead Day Nursery",nursery:"Finchampstead Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Woosehill Day Nursery",nursery:"Woosehill Day Nursery",zone:"Greenwood",isHR:false},
+];
+const MGMT_LIST = [
+  {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,zone:"BlueWater"},
+  {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,zone:"Greenwood"},
+  {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,zone:"all"},
+  {name:"Emma McIntyre",nursery:"Head Office",title:"Director (CCO)",isHR:true,zone:"all"},
+  {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,zone:"all"},
+  {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,zone:"all"},
+  {name:"Louise Medley",nursery:"Head Office",title:"PA to MD",isHR:true,zone:"all"},
+];
+
+/* ================================================================
+   COPILOT KNOWLEDGE BASE
+   ================================================================ */
+const COPILOT_KB = {
+  "01": {
+    policy: "All visitors must be signed in and out using the visitor log. External contractors must produce ID and be accompanied by a member of staff at all times. Building perimeter security checks must be completed at the start and end of each session. Any unauthorised person on site must be treated as an immediate safeguarding concern.",
+    source: "CCG Safeguarding Policy — Visitor Access and Site Security, Section 3.1",
+    steps: [
+      "Secure the building perimeter immediately if there is an active security concern.",
+      "Do not confront an unauthorised person alone — contact a colleague and call 999 if necessary.",
+      "Complete the visitor log and note any anomalies with times and descriptions.",
+      "Review your CCTV footage if available and retain it.",
+      "Notify your Area Manager and Ellie Richards (Compliance) of any breach today."
+    ],
+    criticalKeywords: ["child missing","intruder","unauthorised adult","lock-in","lock-out","police"],
+    highKeywords: ["visitor unsigned","access breach","gate left open","door unsecured","contractor unaccompanied"]
+  },
+  "02": {
+    policy: "All accidents, near misses, and hazards must be recorded in the accident/incident log on the day they occur. Fire doors must be maintained in self-closing order at all times — any failure is an immediate hazard requiring interim control. RIDDOR-reportable incidents (specified injuries, over-7-day incapacitation, dangerous occurrences) must be reported to the HSE within the required timeframe.",
+    source: "CCG Health & Safety Policy — Accident Reporting and Fire Safety, Sections 2.1 and 4.2",
+    steps: [
+      "Ensure the immediate area is safe and any injured person receives appropriate first aid.",
+      "Record the incident in the accident/incident log with full details — time, location, people involved, witnesses.",
+      "Photograph any hazard or defect before it is made safe, for the record.",
+      "Implement an interim control immediately (e.g. close the room, assign a staff member to monitor).",
+      "Assess whether this is RIDDOR-reportable and notify Alec Hodson if in any doubt."
+    ],
+    criticalKeywords: ["fire door","fire alarm","gas leak","flood","structural damage","child injured","ambulance","hospital","RIDDOR","evacuation","intruder","lock-in","lock-out","medication error","allergy","anaphylaxis"],
+    highKeywords: ["broken equipment","hazard","near miss","pest","food contamination","damp","mould","trip","slip"]
+  },
+  "03": {
+    policy: "Minimum staffing ratios must be maintained at all times: 1:3 for children under 2, 1:5 for 2-year-olds, 1:8 for 3–5 year-olds. A breach of ratio is a regulatory non-compliance and must be corrected immediately. Emergency cover procedures must be activated if a ratio breach cannot be resolved within 15 minutes.",
+    source: "CCG Staffing Ratio Policy and EYFS Statutory Framework (2024), Section 3.29–3.38",
+    steps: [
+      "Identify which room(s) are affected and the current ratio in each.",
+      "Immediately move available qualified staff to cover the affected room.",
+      "Contact your Area Manager now — do not wait to see if it resolves itself.",
+      "Do not accept children into a room that is below ratio until cover is in place.",
+      "Document the breach, the time it occurred, the duration, and how it was resolved."
+    ],
+    criticalKeywords: ["ratio breach","below ratio","uncovered room","no qualified staff","no first aider","room closed","children unsupervised"],
+    highKeywords: ["short staffed","cover needed","ratio at risk","no spare cover","agency needed"]
+  },
+  "04": {
+    policy: "Settings must deliver the EYFS Statutory Framework at all times. Observed practice that falls below the expected standard must be addressed promptly through coaching, supervision, and where necessary formal performance management. Self-evaluation should be ongoing and documented. Any concern that a setting's practice poses a risk to children's welfare must be escalated to the Area Manager immediately.",
+    source: "EYFS Statutory Framework (Sept 2024) and CCG Quality Standards Policy",
+    steps: [
+      "Document the specific practice concern with dates, times, and what was observed.",
+      "Speak to the member of staff involved in a supportive, non-confrontational way and note the conversation.",
+      "Review your most recent self-evaluation and identify whether this is an isolated concern or a pattern.",
+      "Agree an improvement action with the staff member and set a review date.",
+      "Notify your Area Manager if the concern relates to child welfare or repeated non-compliance."
+    ],
+    criticalKeywords: ["child at risk","welfare concern","unsafe practice","Ofsted notifiable","immediate risk","harm"],
+    highKeywords: ["practice concern","EYFS gap","repeated issue","non-compliance","observation concern"]
+  },
+  "05": {
+    policy: "All premises defects must be reported to the maintenance log on the day they are identified. Any defect that creates an immediate risk (structural, electrical, water ingress, heating failure in winter) must be treated as urgent and reported to the Estates lead (Alec Hodson) the same day. Contractors must be managed in line with the Contractor Management Policy — ID checked, induction completed, work supervised.",
+    source: "CCG Premises and Maintenance Procedure, Section 2.1",
+    steps: [
+      "Log the defect in the premises maintenance record with a photograph if possible.",
+      "Assess whether the defect creates an immediate risk — if yes, close the affected area immediately.",
+      "Contact your maintenance contractor for an urgent callout if the risk is immediate.",
+      "Notify your Area Manager and Alec Hodson (Estates) if the issue cannot be made safe today.",
+      "Do not allow children or staff into an area that cannot be made safe."
+    ],
+    criticalKeywords: ["structural damage","ceiling collapse","gas leak","flood","electrical fault","heating failure","boiler","no hot water in winter","fire door"],
+    highKeywords: ["broken equipment","leak","damp","mould","pest","door not locking","window broken","playground hazard"]
+  },
+  "06": {
+    policy: "All staff must have a valid enhanced DBS check on the Disclosure and Barring Service Update Service before starting work with children. DBS certificates must be reviewed annually. Paediatric First Aid qualifications must be renewed every 3 years. Any lapse in a required certification must be flagged to the HR team and the staff member must not work unsupervised with children until the certification is renewed.",
+    source: "CCG DBS Check Policy and Certification Register Procedure",
+    steps: [
+      "Identify the staff member(s) affected and the specific certification(s) that have lapsed or are missing.",
+      "Immediately arrange for the staff member to be supervised at all times if their DBS or PFA has lapsed.",
+      "Contact HR (Ellie Richards) today to initiate the renewal process.",
+      "Do not allow unsupervised contact with children until the issue is resolved.",
+      "Document the lapse, the date identified, and the steps taken in the compliance register."
+    ],
+    criticalKeywords: ["no DBS","DBS expired","DBS lapsed","working without DBS","no first aider","PFA expired","safeguarding training lapsed"],
+    highKeywords: ["DBS overdue","certificate expiring","renewal needed","compliance gap","training lapsed"]
+  },
+  "07": {
+    policy: "Any personal data incident — including lost devices, misdirected emails containing personal data, or unauthorised access to records — must be reported to the Data Protection Officer (Alec Hodson) within 24 hours of discovery. The DPO will assess whether the incident must be reported to the ICO within 72 hours of the organisation becoming aware. Do not attempt to recover a lost device yourself — contact IT support immediately.",
+    source: "CCG Data Protection Policy — Breach Notification Procedure, Section 5",
+    steps: [
+      "Stop any ongoing breach immediately — if a device is lost, report to IT to enable remote wipe.",
+      "Do not attempt to contact the unintended recipient of a misdirected email yourself — this can make things worse.",
+      "Notify Alec Hodson (DPO) immediately — do not wait until the end of the day.",
+      "Write down everything you know: what data was involved, how many people affected, when it happened.",
+      "Alec Hodson will assess whether ICO notification is required within 72 hours."
+    ],
+    criticalKeywords: ["data breach","personal data shared","lost device","misdirected email","ICO","unauthorised access","data lost","GDPR breach"],
+    highKeywords: ["email sent wrong","device missing","access issue","file shared incorrectly","data concern"]
+  },
+  "08": {
+    policy: "All complaints with a compliance dimension must be logged in the complaints register on the day they are received. The manager must acknowledge the complaint in writing within 2 working days. If the complaint relates to child welfare, safeguarding, or a potential Ofsted-notifiable event, it must be escalated to the Area Manager and Emma McIntyre (CCO) immediately. Parents have the right to escalate unresolved complaints directly to Ofsted.",
+    source: "CCG Complaints Policy and Ofsted Notification Triggers Guidance",
+    steps: [
+      "Log the complaint in the complaints register with full details — date, parent name, nature of complaint.",
+      "Acknowledge receipt to the parent in writing within 2 working days.",
+      "Assess whether the complaint relates to child welfare or a potential Ofsted-notifiable event — if yes, escalate now.",
+      "Notify your Area Manager and Emma McIntyre (CCO) if the complaint is serious or complex.",
+      "Do not make any admission of liability or offer of compensation without approval from senior management."
+    ],
+    criticalKeywords: ["Ofsted complaint","regulatory complaint","child welfare complaint","safeguarding complaint","formal complaint","legal action"],
+    highKeywords: ["parent complaint","formal complaint","written complaint","serious concern","complaint escalated"]
+  },
+  "09": {
+    policy: "If your issue does not fit any of the categories above, log it here and your Area Manager will review it and route it to the right person. Provide as much detail as possible so the issue can be correctly categorised and actioned.",
+    source: "CCG General Escalation Guidance",
+    steps: [
+      "Describe the issue in as much detail as possible.",
+      "Note any immediate risks or actions you have already taken.",
+      "Your Area Manager will review this and contact you within 3 working days.",
+      "If you believe there is an immediate risk, use the Critical escalation button instead."
+    ],
+    criticalKeywords: ["immediate risk","urgent","emergency","child at risk","staff at risk"],
+    highKeywords: ["urgent","serious","significant","cannot wait"]
+  }
+};
+
+const ROUTING = {
+  "01": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Alec Hodson"},
+  "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Alec Hodson"},
+  "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)"},
+  "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)"},
+  "05": {tier2:"Area Manager",tier3:"Alec Hodson (Estates)"},
+  "06": {tier2:"Ellie Richards (Compliance)",tier3:"Alec Hodson"},
+  "07": {tier2:"Alec Hodson (DPO)",tier3:"Alec Hodson"},
+  "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Alec Hodson"},
+  "09": {tier2:"Area Manager",tier3:"Alec Hodson"}
+};
+
+const ZONE_AM = {BlueWater:"Pav Bilkhu",Greenwood:"Leanne Maynard"};
+
+/* ================================================================
+   STATE
+   ================================================================ */
+var SESSION = null;
+var selectedCat = null;
+var selectedUrgency = null;
+var copilotAssessedLevel = null;
+var currentIssueId = null;
+var resolveTargetId = null;
+
+function getStoredSession(){try{return JSON.parse(localStorage.getItem('issueCompanionSession1')||'null');}catch(e){return null;}}
+function storeSession(s){try{localStorage.setItem('issueCompanionSession1',JSON.stringify(s));}catch(e){}}
+function clearIdentity(){
+  try{localStorage.removeItem('issueCompanionSession1');}catch(e){}
+  SESSION=null;
+  document.getElementById('identityModal').classList.add('active');
+  populateIdentitySelect();
+}
+
+function populateIdentitySelect(){
+  const sel=document.getElementById('idSelect');
+  sel.innerHTML='<option value="">— Select your nursery or name —</option>';
+  const ng=document.createElement('optgroup');ng.label='Nurseries';
+  NURSERY_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='n:'+i;o.textContent=u.nursery;ng.appendChild(o);});
+  sel.appendChild(ng);
+  const mg=document.createElement('optgroup');mg.label='Management & Head Office';
+  MGMT_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='m:'+i;o.textContent=u.name+' — '+u.title;mg.appendChild(o);});
+  sel.appendChild(mg);
+}
+
+function confirmIdentity(){
+  const sel=document.getElementById('idSelect');const val=sel.value;
+  if(!val){document.getElementById('idError').style.display='block';return;}
+  document.getElementById('idError').style.display='none';
+  if(val.startsWith('n:')){SESSION=JSON.parse(JSON.stringify(NURSERY_LIST[parseInt(val.slice(2))]));}
+  else{SESSION=JSON.parse(JSON.stringify(MGMT_LIST[parseInt(val.slice(2))]));}
+  storeSession(SESSION);
+  document.getElementById('identityModal').classList.remove('active');
+  applySession();
+}
+
+function applySession(){
+  if(!SESSION)return;
+  document.getElementById('sessionUserName').textContent=SESSION.name||SESSION.nursery;
+  document.getElementById('sessionNursery').textContent=SESSION.isHR?(SESSION.title+' — '+SESSION.nursery):SESSION.nursery;
+  // Show management nav for HR/management users
+  if(SESSION.isHR){
+    document.getElementById('mgmtNavSection').style.display='block';
+    document.getElementById('mgmtNavlist').style.display='flex';
+  }
+  renderMyIssues();
+  renderDashboard();
+}
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navlist button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='myissues')renderMyIssues();
+  if(id==='dashboard')renderDashboard();
+  if(id==='allissues')renderAllIssues();
+}
+
+/* ================================================================
+   ISSUE LOGGING
+   ================================================================ */
+function selectCat(tile){
+  document.querySelectorAll('.cat-tile').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  selectedCat=tile.getAttribute('data-cat');
+  const name=tile.getAttribute('data-name');
+  document.getElementById('logCardTitle').textContent='Log an issue — '+name;
+  document.getElementById('logCardSub').textContent='Describe what\'s happening below, then rate how urgent it feels.';
+  // Reset copilot
+  document.getElementById('copilotPanel').classList.remove('show');
+  document.getElementById('confirmScreen').classList.remove('show');
+  document.getElementById('confirmScreen').style.display='none';
+  document.getElementById('logCard').querySelectorAll('.card-title,.card-sub,label,.desc-box,.char-hint,.urgency-row,.btn-row').forEach(e=>e.style.display='');
+}
+
+function selectUrgency(pill){
+  document.querySelectorAll('.urgency-pill').forEach(p=>p.classList.remove('active'));
+  pill.classList.add('active');
+  selectedUrgency=pill.getAttribute('data-level');
+}
+
+document.getElementById('descBox').addEventListener('input',function(){
+  document.getElementById('charHint').textContent=this.value.length+' characters';
+});
+
+function severityScore(text,catId){
+  const t=text.toLowerCase();
+  const kb=COPILOT_KB[catId]||COPILOT_KB['09'];
+  for(const kw of (kb.criticalKeywords||[])){if(t.includes(kw.toLowerCase()))return 'critical';}
+  for(const kw of (kb.highKeywords||[])){if(t.includes(kw.toLowerCase()))return 'high';}
+  // Fallback: check global critical terms
+  const globalCrit=["child missing","police","ambulance","fire","gas leak","flood","RIDDOR","LADO","data breach","ratio breach"];
+  for(const kw of globalCrit){if(t.includes(kw.toLowerCase()))return 'critical';}
+  return null; // no strong signal
+}
+
+const LEVEL_ORDER={low:0,medium:1,high:2,critical:3};
+const LEVEL_LABEL={low:'Low',medium:'Medium',high:'High',critical:'Critical'};
+
+function runCopilot(){
+  const desc=document.getElementById('descBox').value.trim();
+  if(!desc){alert('Please describe the issue before getting guidance.');return;}
+  if(!selectedUrgency){alert('Please select an urgency level.');return;}
+  if(!selectedCat){alert('Please select a category.');return;}
+
+  const btn=document.getElementById('copilotBtn');
+  btn.innerHTML='<span class="spinner"></span>Analysing...';
+  btn.disabled=true;
+
+  setTimeout(()=>{
+    btn.innerHTML='Get Copilot guidance';
+    btn.disabled=false;
+    showCopilotResponse(desc);
+  },1400);
+}
+
+function showCopilotResponse(desc){
+  const kb=COPILOT_KB[selectedCat]||COPILOT_KB['09'];
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'this category';
+
+  // Set badge
+  document.getElementById('copilotBadgeText').textContent='COPILOT ASSESSMENT — cross-checked against '+catName+' policy';
+
+  // Policy
+  document.getElementById('policyText').textContent=kb.policy;
+  document.getElementById('policySource').textContent='Source: '+kb.source;
+
+  // Steps
+  const ol=document.getElementById('stepsList');
+  ol.innerHTML='';
+  kb.steps.forEach(s=>{const li=document.createElement('li');li.textContent=s;ol.appendChild(li);});
+
+  // Severity cross-check
+  copilotAssessedLevel=severityScore(desc,selectedCat);
+  const userLevel=selectedUrgency;
+  const disc=document.getElementById('discrepancyAlert');
+
+  if(copilotAssessedLevel && LEVEL_ORDER[copilotAssessedLevel]>LEVEL_ORDER[userLevel]){
+    const diff=LEVEL_ORDER[copilotAssessedLevel]-LEVEL_ORDER[userLevel];
+    const cls=diff>=2?'discrepancy-alert':'discrepancy-alert amber';
+    disc.className=cls;
+    disc.style.display='block';
+    disc.innerHTML='<strong>Your rating and Copilot\'s assessment differ.</strong>Based on your description, Copilot assesses this as <strong>'+LEVEL_LABEL[copilotAssessedLevel]+'</strong>, which is higher than your rating of '+LEVEL_LABEL[userLevel]+'. The higher rating will govern where this is routed. Recommend updating your selection before submitting.';
+  } else {
+    disc.style.display='none';
+    copilotAssessedLevel=null;
+  }
+
+  // Copilot rating text
+  const governingLevel=copilotAssessedLevel||userLevel;
+  const routing=ROUTING[selectedCat]||ROUTING['09'];
+  let ratingText='';
+  if(governingLevel==='critical'){
+    ratingText='This issue is rated <strong>Critical</strong>. An immediate alert will be sent to '+routing.tier3+' and the category lead, with Teams notification and SMS.';
+  } else if(governingLevel==='high'){
+    ratingText='This issue is rated <strong>High</strong>. Escalation routes to '+routing.tier2+' with a 24–48 hour response target.';
+  } else if(governingLevel==='medium'){
+    ratingText='This issue is rated <strong>Medium</strong>. If you escalate, it routes to '+routing.tier2+' with a 3 working day response target.';
+  } else {
+    ratingText='This issue is rated <strong>Low</strong>. No escalation required — log it, take the first steps, and monitor.';
+  }
+  document.getElementById('copilotRatingText').innerHTML=ratingText;
+
+  // Escalate button label
+  const governingLabel=LEVEL_LABEL[governingLevel];
+  document.getElementById('escalateBtn').textContent='Escalate as '+governingLabel;
+  document.getElementById('escalateDesc').textContent=governingLevel==='critical'?
+    'Sends an immediate alert to '+routing.tier3+' with Teams notification and SMS.':
+    'Routes to '+routing.tier2+' with the appropriate response target.';
+
+  document.getElementById('copilotPanel').classList.add('show');
+  document.getElementById('copilotPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function markActioned(){
+  const desc=document.getElementById('descBox').value.trim();
+  const issue=saveIssue(desc,'actioned');
+  showConfirmation('actioned',issue);
+}
+
+function escalateIssue(){
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+  if(governingLevel==='critical'){
+    triggerCriticalEscalation();
+    return;
+  }
+  const desc=document.getElementById('descBox').value.trim();
+  const issue=saveIssue(desc,'escalated');
+  showConfirmation('escalated',issue);
+}
+
+function showConfirmation(type,issue){
+  // Hide form elements
+  document.querySelectorAll('#logCard label, #logCard .desc-box, #logCard .char-hint, #logCard .urgency-row, #logCard .btn-row, #logCard .copilot-panel').forEach(e=>e.style.display='none');
+  document.getElementById('logCardTitle').style.display='none';
+  document.getElementById('logCardSub').style.display='none';
+
+  const screen=document.getElementById('confirmScreen');
+  screen.style.display='block';
+  screen.classList.add('show');
+
+  const routing=ROUTING[selectedCat]||ROUTING['09'];
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+
+  if(type==='actioned'){
+    document.getElementById('confirmIcon').textContent='✓';
+    document.getElementById('confirmTitle').textContent='Issue logged and actioned';
+    document.getElementById('confirmMsg').textContent='Your interim steps have been noted. This issue remains open and will auto-close in 7 days if no further action is logged. You can add a resolution note from My Issues at any time.';
+    document.getElementById('notifiedList').innerHTML='<li>Logged to your setting\'s issue record</li><li>Visible to your Area Manager and senior management</li>';
+  } else {
+    const label=LEVEL_LABEL[governingLevel];
+    document.getElementById('confirmIcon').textContent=governingLevel==='critical'?'🔴':'⬆';
+    document.getElementById('confirmTitle').textContent='Issue escalated as '+label;
+    const notified=[];
+    if(governingLevel==='critical'){
+      notified.push('<li>Alec Hodson — immediate alert (email + Teams + SMS)</li>');
+      notified.push('<li>'+routing.tier3+' — high-priority notification</li>');
+      notified.push('<li>Logged to the group critical incidents register</li>');
+      document.getElementById('confirmMsg').textContent='A critical alert has been sent. Response target: within 2 hours. You will be contacted directly.';
+    } else if(governingLevel==='high'){
+      notified.push('<li>'+routing.tier2+' — email + Teams notification</li>');
+      notified.push('<li>Response target: 24–48 hours</li>');
+      document.getElementById('confirmMsg').textContent='Your Area Manager and the relevant lead have been notified. Response target is 24–48 hours.';
+    } else {
+      notified.push('<li>'+routing.tier2+' — email notification</li>');
+      notified.push('<li>Response target: 3 working days</li>');
+      document.getElementById('confirmMsg').textContent='Your Area Manager has been notified. Response target is 3 working days.';
+    }
+    document.getElementById('notifiedList').innerHTML=notified.join('');
+  }
+
+  screen.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetForm(){
+  selectedCat=null;selectedUrgency=null;copilotAssessedLevel=null;
+  document.querySelectorAll('.cat-tile').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('.urgency-pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('descBox').value='';
+  document.getElementById('charHint').textContent='0 characters';
+  document.getElementById('copilotPanel').classList.remove('show');
+  document.getElementById('confirmScreen').classList.remove('show');
+  document.getElementById('confirmScreen').style.display='none';
+  document.getElementById('logCardTitle').textContent='Log an issue';
+  document.getElementById('logCardSub').textContent='Select a category above, then describe what\'s happening.';
+  document.querySelectorAll('#logCard label, #logCard .desc-box, #logCard .char-hint, #logCard .urgency-row, #logCard .btn-row').forEach(e=>e.style.display='');
+  document.getElementById('logCardTitle').style.display='';
+  document.getElementById('logCardSub').style.display='';
+}
+
+/* ================================================================
+   ISSUE STORE (localStorage)
+   ================================================================ */
+function getIssues(){try{return JSON.parse(localStorage.getItem('ccgIssues1')||'[]');}catch(e){return[];}}
+function saveIssues(arr){try{localStorage.setItem('ccgIssues1',JSON.stringify(arr));}catch(e){}}
+
+function saveIssue(desc,status){
+  const issues=getIssues();
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'Other';
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+  const id='ISS-'+Date.now();
+  const issue={
+    id,
+    nursery:SESSION?SESSION.nursery:'Unknown',
+    zone:SESSION?SESSION.zone||'':' ',
+    loggedBy:SESSION?SESSION.name||SESSION.nursery:'Unknown',
+    cat:selectedCat,
+    catName,
+    desc,
+    userRating:selectedUrgency,
+    copilotRating:copilotAssessedLevel,
+    governingRating:governingLevel,
+    status,
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+    resolutionNote:''
+  };
+  issues.push(issue);
+  saveIssues(issues);
+  currentIssueId=id;
+  return issue;
+}
+
+function saveDraft(){
+  const desc=document.getElementById('descBox').value.trim();
+  if(!desc){alert('Add a description before saving as draft.');return;}
+  if(!selectedCat){alert('Select a category before saving.');return;}
+  const issues=getIssues();
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'Other';
+  issues.push({
+    id:'ISS-'+Date.now(),
+    nursery:SESSION?SESSION.nursery:'Unknown',
+    zone:SESSION?SESSION.zone||'':'',
+    loggedBy:SESSION?SESSION.name||SESSION.nursery:'Unknown',
+    cat:selectedCat,catName,desc,
+    userRating:selectedUrgency||'',copilotRating:null,governingRating:selectedUrgency||'low',
+    status:'draft',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),resolutionNote:''
+  });
+  saveIssues(issues);
+  alert('Draft saved. You can find it in My Issues.');
+}
+
+/* ================================================================
+   MY ISSUES
+   ================================================================ */
+function renderMyIssues(){
+  const el=document.getElementById('myIssuesContent');
+  if(!SESSION){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">Sign in to see your issues.</p>';return;}
+  const all=getIssues();
+  const mine=SESSION.isHR?all:all.filter(i=>i.nursery===SESSION.nursery);
+  if(!mine.length){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">No issues logged yet. Use the Log an issue page to get started.</p>';return;}
+  const sorted=[...mine].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  let html='<table class="log-table"><thead><tr><th>ID</th><th>Category</th><th>Severity</th><th>Status</th><th>Logged</th><th>Action</th></tr></thead><tbody>';
+  sorted.forEach(i=>{
+    const d=new Date(i.createdAt);
+    const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    html+=`<tr>
+      <td style="font-family:var(--font-mono);font-size:11.5px;">${i.id.slice(-8)}</td>
+      <td>${i.catName}</td>
+      <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
+      <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
+      <td style="font-size:12.5px;">${ds}</td>
+      <td>${i.status!=='closed'?`<button class="btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="openResolveModal('${i.id}')">Close</button>`:''}</td>
+    </tr>`;
+    if(i.desc){html+=`<tr><td colspan="6" style="padding:0 12px 12px;font-size:12.5px;color:var(--grey);">${i.desc.slice(0,180)}${i.desc.length>180?'…':''}</td></tr>`;}
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function openResolveModal(id){
+  resolveTargetId=id;
+  document.getElementById('resolveNote').value='';
+  document.getElementById('resolveModal').classList.add('active');
+}
+
+function confirmResolve(){
+  const note=document.getElementById('resolveNote').value.trim();
+  if(!note){alert('Please add a resolution note before closing.');return;}
+  const issues=getIssues();
+  const idx=issues.findIndex(i=>i.id===resolveTargetId);
+  if(idx>=0){issues[idx].status='closed';issues[idx].resolutionNote=note;issues[idx].updatedAt=new Date().toISOString();}
+  saveIssues(issues);
+  document.getElementById('resolveModal').classList.remove('active');
+  renderMyIssues();
+  renderDashboard();
+}
+
+/* ================================================================
+   ALL ISSUES (management)
+   ================================================================ */
+function renderAllIssues(){
+  const el=document.getElementById('allIssuesContent');
+  let issues=getIssues();
+  const sev=document.getElementById('filterSeverity').value;
+  const stat=document.getElementById('filterStatus').value;
+  if(sev)issues=issues.filter(i=>i.governingRating===sev);
+  if(stat)issues=issues.filter(i=>i.status===stat);
+  if(!issues.length){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">No issues match the current filters.</p>';return;}
+  const sorted=[...issues].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  let html='<table class="log-table"><thead><tr><th>ID</th><th>Setting</th><th>Category</th><th>Severity</th><th>Status</th><th>Logged</th></tr></thead><tbody>';
+  sorted.forEach(i=>{
+    const d=new Date(i.createdAt);
+    const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+    html+=`<tr>
+      <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
+      <td style="font-size:12.5px;">${i.nursery}</td>
+      <td style="font-size:12.5px;">${i.catName}</td>
+      <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
+      <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
+      <td style="font-size:12px;">${ds}</td>
+    </tr>`;
+    if(i.desc){html+=`<tr><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+/* ================================================================
+   DASHBOARD
+   ================================================================ */
+function renderDashboard(){
+  const issues=getIssues();
+  const open=issues.filter(i=>i.status!=='closed'&&i.status!=='draft');
+  const escalated=issues.filter(i=>i.status==='escalated');
+  const critical=issues.filter(i=>i.governingRating==='critical'&&i.status!=='closed');
+  const mismatches=issues.filter(i=>i.copilotRating&&i.copilotRating!==i.userRating);
+
+  // KPI cards
+  const kpiGrid=document.getElementById('kpiGrid');
+  if(kpiGrid){
+    kpiGrid.innerHTML=`
+      <div class="kpi-card"><div class="num">${issues.length}</div><div class="lbl">Total logged</div></div>
+      <div class="kpi-card"><div class="num">${open.length}</div><div class="lbl">Open issues</div></div>
+      <div class="kpi-card"><div class="num">${escalated.length}</div><div class="lbl">Escalated</div></div>
+      <div class="kpi-card"><div class="num">${mismatches.length}</div><div class="lbl">Rating mismatches</div></div>
+    `;
+  }
+
+  // Bar chart by category
+  const byCat={};
+  issues.forEach(i=>{byCat[i.catName]=(byCat[i.catName]||0)+1;});
+  const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const max=sorted.length?sorted[0][1]:1;
+  const barEl=document.getElementById('barChart');
+  if(barEl){
+    if(!sorted.length){barEl.innerHTML='<p style="font-size:13px;color:var(--grey);">No issues logged yet.</p>';return;}
+    barEl.innerHTML=sorted.map(([cat,n])=>`
+      <div class="bar-row">
+        <span class="lbl">${cat.length>22?cat.slice(0,22)+'…':cat}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%"></div></div>
+        <span class="val">${n}</span>
+      </div>`).join('');
+  }
+
+  // Critical list
+  const critEl=document.getElementById('criticalList');
+  if(critEl){
+    if(!critical.length){critEl.innerHTML='<p style="font-size:13px;color:var(--grey);">No open critical or high issues.</p>';return;}
+    const highAndCrit=issues.filter(i=>(i.governingRating==='critical'||i.governingRating==='high')&&i.status!=='closed');
+    critEl.innerHTML=highAndCrit.map(i=>`
+      <div style="padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;">
+        <span class="badge badge-${i.governingRating}" style="margin-right:8px;">${LEVEL_LABEL[i.governingRating]}</span>
+        <strong>${i.catName}</strong> — ${i.nursery}
+        <span style="color:var(--grey);margin-left:10px;font-size:12px;">${new Date(i.createdAt).toLocaleDateString('en-GB')}</span>
+        <div style="color:var(--grey);margin-top:4px;font-size:12.5px;">${i.desc?i.desc.slice(0,120)+'…':''}</div>
+      </div>`).join('');
+  }
+}
+
+/* ================================================================
+   CRITICAL ESCALATION
+   ================================================================ */
+function triggerCriticalEscalation(){
+  document.getElementById('criticalNote').value='';
+  document.getElementById('criticalModal').classList.add('active');
+}
+function closeCriticalModal(){
+  document.getElementById('criticalModal').classList.remove('active');
+}
+function confirmCriticalEscalation(){
+  const note=document.getElementById('criticalNote').value.trim();
+  if(!note){alert('Please describe the immediate risk before sending the alert.');return;}
+  // Save as critical issue
+  const desc=document.getElementById('descBox').value.trim()||note;
+  if(selectedCat){
+    const issue=saveIssue(desc+'\n\nCritical note: '+note,'escalated');
+  }
+  closeCriticalModal();
+  // Show confirmation
+  alert('Critical alert sent.\n\nAlec Hodson has been notified by email, Teams message and SMS.\nResponse target: within 2 hours.\n\nIssue reference: ISS-'+Date.now().toString().slice(-6));
+  renderDashboard();
+  renderMyIssues();
+}
+
+/* ================================================================
+   SEARCH (quick guidance)
+   ================================================================ */
+const SEARCH_HINTS = [
+  {q:"fire door",cat:"02",tip:"A fire door that isn't self-closing is a life-safety control failure. Rate as Critical and escalate immediately."},
+  {q:"expired dbs",cat:"06",tip:"Staff with an expired DBS must be supervised at all times. Contact HR today to initiate renewal."},
+  {q:"dbs expired",cat:"06",tip:"Staff with an expired DBS must be supervised at all times. Contact HR today to initiate renewal."},
+  {q:"ratio breach",cat:"03",tip:"A ratio breach is a regulatory non-compliance. Contact your Area Manager immediately and document the breach."},
+  {q:"below ratio",cat:"03",tip:"A ratio breach is a regulatory non-compliance. Contact your Area Manager immediately."},
+  {q:"child missing",cat:"01",tip:"A missing child is a Critical safeguarding emergency. Call 999 immediately, then notify Alec Hodson and Ellie Richards."},
+  {q:"data breach",cat:"07",tip:"Notify Alec Hodson (DPO) immediately. The ICO may need to be informed within 72 hours."},
+  {q:"lost device",cat:"07",tip:"Report to IT immediately for remote wipe. Notify Alec Hodson (DPO) the same day."},
+  {q:"gas leak",cat:"02",tip:"Evacuate immediately. Call 999 and the National Gas Emergency Service (0800 111 999). Do not re-enter until cleared."},
+  {q:"misdirected email",cat:"07",tip:"Do not contact the unintended recipient yourself. Notify Alec Hodson (DPO) immediately."},
+  {q:"RIDDOR",cat:"02",tip:"RIDDOR-reportable incidents must be reported to the HSE. Notify Alec Hodson immediately to confirm whether reporting is required."},
+  {q:"near miss",cat:"02",tip:"All near misses must be logged in the accident/incident record on the day. Photograph the hazard before making it safe."},
+  {q:"LADO",cat:"01",tip:"Any allegation against a member of staff must be referred to the LADO immediately. Do not investigate internally first."},
+  {q:"allegation",cat:"01",tip:"Any allegation against a member of staff must be referred to the LADO immediately. Contact Ellie Richards and Alec Hodson now."},
+  {q:"ofsted complaint",cat:"08",tip:"Log the complaint, acknowledge in writing within 2 working days, and notify Emma McIntyre (CCO) immediately."},
+  {q:"damp",cat:"05",tip:"Log in the premises record and arrange an inspection. If mould is visible in a child area, close the area until remediated."},
+  {q:"mould",cat:"05",tip:"Close any child-accessible area with visible mould immediately. Log and arrange urgent remediation."},
+];
+
+function handleSearch(val){
+  const v=val.trim().toLowerCase();
+  const el=document.getElementById('searchResults');
+  if(!v){el.style.display='none';return;}
+  const matches=SEARCH_HINTS.filter(h=>h.q.includes(v)||v.includes(h.q));
+  if(!matches.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=matches.map(m=>`
+    <div class="notice" style="cursor:pointer;margin-bottom:8px;" onclick="applySearchHint('${m.cat}')">
+      <strong>Quick guidance: ${m.q}</strong><br>${m.tip}
+      <div style="margin-top:6px;font-size:12px;color:var(--purple-mid);">Click to pre-select category ${m.cat} &#8594;</div>
+    </div>`).join('');
+}
+
+function applySearchHint(catId){
+  document.getElementById('searchBox').value='';
+  document.getElementById('searchResults').style.display='none';
+  const tile=document.querySelector(`.cat-tile[data-cat="${catId}"]`);
+  if(tile){selectCat(tile);tile.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+populateIdentitySelect();
+SESSION=getStoredSession();
+if(SESSION){
+  document.getElementById('identityModal').classList.remove('active');
+  applySession();
+}
+</script>
+</body>
+</html>
