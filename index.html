@@ -458,6 +458,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
         <table class="routing-table">
           <tr><th>Role</th><th>Person</th><th>Covers</th></tr>
           <tr><td>Group CEO / DPO</td><td>Alec Hodson</td><td>All Critical escalations, Data Protection, Estates</td></tr>
+          <tr><td>EA to Group CEO</td><td>Louise Medley</td><td>Secondary contact for all escalations — <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></td></tr>
           <tr><td>Director (CCO)</td><td>Emma McIntyre</td><td>Ratios &amp; cover, Standards &amp; quality, Complaints</td></tr>
           <tr><td>Compliance Lead</td><td>Ellie Richards</td><td>Safeguarding, H&amp;S, Standards, Compliance docs</td></tr>
           <tr><td>Area Manager — BlueWater</td><td>Pav Bilkhu</td><td>Abacus, Bees Knees, Northumberland, Smart Tots, Saltway, Cedars, Boot Farm, Lower Earley, Our Den</td></tr>
@@ -525,6 +526,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
         <p>Who receives escalation notifications per category and severity.</p>
       </div>
       <div class="card">
+        <div class="notice amber" style="margin-bottom:14px;"><strong>Louise Medley (EA to Group CEO)</strong> is copied as a secondary contact on all escalations across every category. Email: <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></div>
         <table class="routing-table">
           <tr><th>#</th><th>Category</th><th>Tier 2 Lead (High)</th><th>Tier 3 Lead (Critical)</th></tr>
           <tr><td>01</td><td>Safeguarding — operational</td><td>Area Manager + Ellie Richards</td><td>Alec Hodson</td></tr>
@@ -597,7 +599,7 @@ const MGMT_LIST = [
   {name:"Emma McIntyre",nursery:"Head Office",title:"Director (CCO)",isHR:true,zone:"all"},
   {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,zone:"all"},
   {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,zone:"all"},
-  {name:"Louise Medley",nursery:"Head Office",title:"PA to MD",isHR:true,zone:"all"},
+  {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,zone:"all"},
 ];
 
 /* ================================================================
@@ -962,15 +964,18 @@ function showConfirmation(type,issue){
     const notified=[];
     if(governingLevel==='critical'){
       notified.push('<li>Alec Hodson — immediate alert (email + Teams + SMS)</li>');
+      notified.push('<li>Louise Medley (EA to Group CEO) — secondary alert (email)</li>');
       notified.push('<li>'+routing.tier3+' — high-priority notification</li>');
       notified.push('<li>Logged to the group critical incidents register</li>');
       document.getElementById('confirmMsg').textContent='A critical alert has been sent. Response target: within 2 hours. You will be contacted directly.';
     } else if(governingLevel==='high'){
       notified.push('<li>'+routing.tier2+' — email + Teams notification</li>');
+      notified.push('<li>Louise Medley (EA to Group CEO) — secondary notification (email)</li>');
       notified.push('<li>Response target: 24–48 hours</li>');
       document.getElementById('confirmMsg').textContent='Your Area Manager and the relevant lead have been notified. Response target is 24–48 hours.';
     } else {
       notified.push('<li>'+routing.tier2+' — email notification</li>');
+      notified.push('<li>Louise Medley (EA to Group CEO) — secondary notification (email)</li>');
       notified.push('<li>Response target: 3 working days</li>');
       document.getElementById('confirmMsg').textContent='Your Area Manager has been notified. Response target is 3 working days.';
     }
@@ -1198,7 +1203,7 @@ function confirmCriticalEscalation(){
   }
   closeCriticalModal();
   // Show confirmation
-  alert('Critical alert sent.\n\nAlec Hodson has been notified by email, Teams message and SMS.\nResponse target: within 2 hours.\n\nIssue reference: ISS-'+Date.now().toString().slice(-6));
+  alert('Critical alert sent.\n\nAlec Hodson has been notified by email, Teams message and SMS.\nLouise Medley (EA to Group CEO) has been copied as secondary contact.\nResponse target: within 2 hours.\n\nIssue reference: ISS-'+Date.now().toString().slice(-6));
   renderDashboard();
   renderMyIssues();
 }
