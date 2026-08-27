@@ -1256,11 +1256,37 @@ function applySearchHint(catId){
    INIT
    ================================================================ */
 populateIdentitySelect();
-SESSION=getStoredSession();
-if(SESSION){
-  document.getElementById('identityModal').classList.remove('active');
-  applySession();
-}
+
+// Auto-login via URL parameter: ?as=name (e.g. ?as=emma or ?as=louise)
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const asParam = (params.get('as')||'').toLowerCase().trim();
+  if(asParam){
+    // Try to match against management list first, then nursery list
+    let matched = null;
+    MGMT_LIST.forEach((u,i)=>{
+      if(u.name.toLowerCase().includes(asParam)) matched={type:'m',idx:i};
+    });
+    if(!matched){
+      NURSERY_LIST.forEach((u,i)=>{
+        if(u.nursery.toLowerCase().includes(asParam)) matched={type:'n',idx:i};
+      });
+    }
+    if(matched){
+      SESSION = JSON.parse(JSON.stringify(matched.type==='m' ? MGMT_LIST[matched.idx] : NURSERY_LIST[matched.idx]));
+      storeSession(SESSION);
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      return;
+    }
+  }
+  // Fall back to stored session or show modal
+  SESSION=getStoredSession();
+  if(SESSION){
+    document.getElementById('identityModal').classList.remove('active');
+    applySession();
+  }
+})();
 </script>
 </body>
 </html>
