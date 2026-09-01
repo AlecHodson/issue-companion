@@ -60,6 +60,14 @@ nav.navlist button .nav-icon{font-size:15px;width:20px;text-align:center;}
 #sidebar .companion-link a:hover{color:var(--white);}
 .signout-btn{all:unset;cursor:pointer;font-size:12px;color:#8A78A0;margin-top:12px;display:block;}
 .signout-btn:hover{color:#C4B4DC;}
+.sidebar-copilot-btn{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;
+  background:var(--amber-bright);color:var(--purple-deep);border-radius:10px;padding:12px 14px;
+  font-size:13.5px;font-weight:700;margin:16px 0 4px;box-sizing:border-box;
+  box-shadow:0 2px 8px rgba(240,169,63,0.35);transition:background .15s,transform .1s;}
+.sidebar-copilot-btn:hover{background:#f5b93a;transform:translateY(-1px);}
+.sidebar-copilot-btn .sc-icon{font-size:18px;flex-shrink:0;}
+.sidebar-copilot-btn .sc-label{flex:1;line-height:1.25;}
+.sidebar-copilot-btn .sc-sub{display:block;font-size:10.5px;font-weight:500;opacity:.75;margin-top:1px;}
 
 /* ===== MAIN CONTENT ===== */
 #main{flex:1;overflow-y:auto;min-height:100vh;}
@@ -300,6 +308,12 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
       <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> All issues</button>
       <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
     </nav>
+    <button class="sidebar-copilot-btn" onclick="openCopilotFromSidebar()">
+      <span class="sc-icon">🤖</span>
+      <span class="sc-label">Get Copilot guidance
+        <span class="sc-sub">AI policy &amp; triage assistant</span>
+      </span>
+    </button>
     <div class="companion-link">
       <a href="https://alechodson.github.io/hr-companion/" target="_blank" style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;text-decoration:none;color:#C4B4DC;font-size:12.5px;font-weight:600;transition:background .12s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
         <span style="font-size:16px;">🧑‍💼</span>
@@ -891,6 +905,23 @@ function severityScore(text,catId){
 
 const LEVEL_ORDER={low:0,medium:1,high:2,critical:3};
 const LEVEL_LABEL={low:'Low',medium:'Medium',high:'High',critical:'Critical'};
+
+function openCopilotFromSidebar(){
+  // Navigate to the log page
+  const logBtn = document.querySelector('button[data-page="log"]');
+  showPage('log', logBtn);
+  // If copilot panel is already showing, scroll straight to it
+  const panel = document.getElementById('copilotPanel');
+  if(panel && panel.classList.contains('show')){
+    setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}), 100);
+    return;
+  }
+  // Otherwise focus the description box so the manager can start typing
+  setTimeout(()=>{
+    const box = document.getElementById('descBox');
+    if(box){ box.focus(); box.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }, 150);
+}
 
 function runCopilot(){
   const desc=document.getElementById('descBox').value.trim();
