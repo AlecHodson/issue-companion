@@ -247,7 +247,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
   <div class="modal-box">
     <button class="modal-close" onclick="closeCriticalModal()">&#x2715;</button>
     <h3 style="color:var(--red);">&#9888; Critical Escalation</h3>
-    <p>This will send an <strong>immediate high-priority alert</strong> to Alec Hodson (Group CEO / DPO) as ultimate escalation authority, and Emma McIntyre (CCO) as intermediate escalation lead, with in-app notification, Teams message, and SMS. For all unresolved critical issues with compliance, safeguarding or litigation aspects, Alec Hodson is the final authority.</p>
+    <p>This will open an <strong>email and Teams message</strong> to both Alec Hodson (Group CEO) and Emma McIntyre (CCO). Send them when they open. For all unresolved critical issues with compliance, safeguarding or litigation aspects, Alec Hodson is the final authority. Response target: <strong>within 2 hours.</strong></p>
     <div class="notice red" style="margin-bottom:20px;">Response target: <strong>within 2 hours.</strong> Use only when there is an immediate risk to children, staff, or regulatory standing.</div>
     <label class="field-label">Confirm: describe the immediate risk in one sentence</label>
     <div class="resolution-form">
@@ -444,7 +444,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
           <tr><td><span class="badge badge-low">Low</span></td><td>No immediate risk. Monitor and review.</td><td>7 days to resolve</td><td>You only (logged)</td></tr>
           <tr><td><span class="badge badge-medium">Medium</span></td><td>Needs attention this week.</td><td>3 working days</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
           <tr><td><span class="badge badge-high">High</span></td><td>Needs action within 24–48 hours.</td><td>48 hours</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
-          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Emma McIntyre (CCO) + Alec Hodson (ultimate) + SMS</td></tr>
+          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Emma McIntyre (CCO) + Alec Hodson — email &amp; Teams</td></tr>
         </table>
       </div>
 
@@ -952,7 +952,7 @@ function showCopilotResponse(desc){
   const routing=ROUTING[selectedCat]||ROUTING['09'];
   let ratingText='';
   if(governingLevel==='critical'){
-    ratingText='This issue is rated <strong>Critical</strong>. Immediate alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO), with Teams notification and SMS. For unresolved compliance, safeguarding or litigation issues, '+routing.tier4+' is the final authority.';
+    ratingText='This issue is rated <strong>Critical</strong>. Email and Teams alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO). For unresolved compliance, safeguarding or litigation issues, '+routing.tier4+' is the final authority.';
   } else if(governingLevel==='high'){
     ratingText='This issue is rated <strong>High</strong>. Escalation routes first to '+routing.tier2+' (24–48 hour response target). If unresolved, escalates to '+routing.tier3+'.';
   } else if(governingLevel==='medium'){
@@ -966,7 +966,7 @@ function showCopilotResponse(desc){
   const governingLabel=LEVEL_LABEL[governingLevel];
   document.getElementById('escalateBtn').textContent='Escalate as '+governingLabel;
   document.getElementById('escalateDesc').textContent=governingLevel==='critical'?
-    'Sends an immediate alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO). Unresolved compliance, safeguarding or litigation issues escalate to '+routing.tier4+'.':
+    'Opens email and Teams message to '+routing.tier4+' and '+routing.tier3+' (CCO). Send when they open. Response target: 2 hours.':
     'Routes to '+routing.tier2+'. If unresolved, escalates to '+routing.tier3+'.';
 
   document.getElementById('copilotPanel').classList.add('show');
@@ -1014,11 +1014,10 @@ function showConfirmation(type,issue){
     document.getElementById('confirmTitle').textContent='Issue escalated as '+label;
     const notified=[];
     if(governingLevel==='critical'){
-      notified.push('<li>Alec Hodson — immediate alert (email + Teams + SMS)</li>');
-      notified.push('<li>Louise Medley (EA to Group CEO) — secondary alert (email)</li>');
-      notified.push('<li>'+routing.tier3+' — high-priority notification</li>');
-      notified.push('<li>Logged to the group critical incidents register</li>');
-      document.getElementById('confirmMsg').textContent='A critical alert has been sent. Response target: within 2 hours. You will be contacted directly.';
+      notified.push('<li>Alec Hodson — email + Teams message</li>');
+      notified.push('<li>Emma McIntyre (CCO) — email + Teams message</li>');
+      notified.push('<li>Logged to your setting\'s issue record</li>');
+      document.getElementById('confirmMsg').textContent='A critical alert has been sent to Alec Hodson and Emma McIntyre by email and Teams. Response target: within 2 hours.';
     } else if(governingLevel==='high'){
       notified.push('<li>'+routing.tier2+' — email + Teams notification</li>');
       notified.push('<li>Louise Medley (EA to Group CEO) — secondary notification (email)</li>');
@@ -1249,12 +1248,59 @@ function confirmCriticalEscalation(){
   if(!note){alert('Please describe the immediate risk before sending the alert.');return;}
   // Save as critical issue
   const desc=document.getElementById('descBox').value.trim()||note;
-  if(selectedCat){
-    const issue=saveIssue(desc+'\n\nCritical note: '+note,'escalated');
-  }
+  if(selectedCat){ saveIssue(desc+'\n\nCritical note: '+note,'escalated'); }
   closeCriticalModal();
-  // Show confirmation
-  alert('Critical alert sent.\n\nAlec Hodson has been notified by email, Teams message and SMS.\nLouise Medley (EA to Group CEO) has been copied as secondary contact.\nResponse target: within 2 hours.\n\nIssue reference: ISS-'+Date.now().toString().slice(-6));
+
+  const nursery=SESSION?SESSION.nursery:'your setting';
+  const ref='ISS-'+Date.now().toString().slice(-6);
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'Unspecified';
+  const subject=encodeURIComponent('CRITICAL ISSUE ALERT — '+nursery+' — '+catName+' ['+ref+']');
+  const body=encodeURIComponent(
+    'CRITICAL ISSUE ALERT\n\n'+
+    'Reference: '+ref+'\n'+
+    'Setting: '+nursery+'\n'+
+    'Category: '+catName+'\n'+
+    'Logged by: '+(SESSION?SESSION.name||SESSION.nursery:'Unknown')+'\n\n'+
+    'Description:\n'+desc+'\n\n'+
+    'Critical note:\n'+note+'\n\n'+
+    'Response required within 2 hours.\n'+
+    'Please contact the setting manager directly.'
+  );
+  const teamsMsg=encodeURIComponent(
+    '🔴 CRITICAL ISSUE ALERT — '+nursery+'\n'+
+    'Category: '+catName+' | Ref: '+ref+'\n'+
+    'Note: '+note+'\n'+
+    'Response required within 2 hours.'
+  );
+
+  // Open email to both recipients
+  const mailtoUrl='mailto:alec.hodson@completechildcare.co.uk,Emma.McIntyre@completechildcare.co.uk?subject='+subject+'&body='+body;
+  window.open(mailtoUrl,'_blank');
+
+  // Open Teams chat to Alec
+  setTimeout(()=>{
+    window.open('https://teams.microsoft.com/l/chat/0/0?users=alec.hodson@completechildcare.co.uk&message='+teamsMsg,'_blank');
+  },800);
+
+  // Open Teams chat to Emma
+  setTimeout(()=>{
+    window.open('https://teams.microsoft.com/l/chat/0/0?users=Emma.McIntyre@completechildcare.co.uk&message='+teamsMsg,'_blank');
+  },1600);
+
+  // Show confirmation screen
+  document.getElementById('confirmIcon').textContent='🔴';
+  document.getElementById('confirmTitle').textContent='Critical alert sent';
+  document.getElementById('confirmMsg').textContent='Email and Teams messages have been opened to Alec Hodson and Emma McIntyre. Send them now if they did not open automatically. Response target: within 2 hours. Reference: '+ref;
+  document.getElementById('notifiedList').innerHTML=
+    '<li>Alec Hodson — email + Teams message opened</li>'+
+    '<li>Emma McIntyre (CCO) — email + Teams message opened</li>'+
+    '<li>Logged to your setting\'s issue record ('+ref+')</li>';
+  const screen=document.getElementById('confirmScreen');
+  screen.style.display='block';
+  screen.classList.add('show');
+  screen.scrollIntoView({behavior:'smooth',block:'start'});
+
   renderDashboard();
   renderMyIssues();
 }
