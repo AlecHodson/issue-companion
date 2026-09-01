@@ -299,7 +299,11 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
       <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
     </nav>
     <div class="companion-link">
-      <a href="https://alechodson.github.io/hr-companion/" target="_blank">&#8592; HR Companion</a>
+      <a href="https://alechodson.github.io/hr-companion/" target="_blank" style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;text-decoration:none;color:#C4B4DC;font-size:12.5px;font-weight:600;transition:background .12s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+        <span style="font-size:16px;">🧑‍💼</span>
+        <span>HR Companion</span>
+        <span style="margin-left:auto;font-size:10px;opacity:0.7;">↗</span>
+      </a>
     </div>
     <button class="signout-btn" onclick="clearIdentity()">Sign out</button>
   </div>
