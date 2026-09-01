@@ -5,6 +5,7 @@
 <title>Issue Companion — Complete Childcare Group</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
+<script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -580,31 +581,31 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
    DATA
    ================================================================ */
 const NURSERY_LIST = [
-  {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Bees Knees Day Nursery",nursery:"Bees Knees Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Northumberland Day Nursery",nursery:"Northumberland Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Smart Tots Day Nursery",nursery:"Smart Tots Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Saltway Day Nursery",nursery:"Saltway Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Cedars Day Nursery",nursery:"Cedars Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Cedars @ Boot Farm",nursery:"Cedars @ Boot Farm",zone:"BlueWater",isHR:false},
-  {name:"Lower Earley Day Nursery",nursery:"Lower Earley Day Nursery",zone:"BlueWater",isHR:false},
-  {name:"Our Den @ Hillside",nursery:"Our Den @ Hillside",zone:"BlueWater",isHR:false},
-  {name:"Bramley Wood Day Nursery",nursery:"Bramley Wood Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Hazebrouck Day Nursery",nursery:"Hazebrouck Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Kingsclere Day Nursery",nursery:"Kingsclere Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Merrydale Day Nursery",nursery:"Merrydale Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Stepping Stones Day Nursery",nursery:"Stepping Stones Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Happitots Day Nursery",nursery:"Happitots Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Finchampstead Day Nursery",nursery:"Finchampstead Day Nursery",zone:"Greenwood",isHR:false},
-  {name:"Woosehill Day Nursery",nursery:"Woosehill Day Nursery",zone:"Greenwood",isHR:false},
+  {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false,email:"abacus@completechildcare.co.uk"},
+  {name:"Bees Knees Day Nursery",nursery:"Bees Knees Day Nursery",zone:"BlueWater",isHR:false,email:"beesknees@completechildcare.co.uk"},
+  {name:"Northumberland Day Nursery",nursery:"Northumberland Day Nursery",zone:"BlueWater",isHR:false,email:"northumberland@completechildcare.co.uk"},
+  {name:"Smart Tots Day Nursery",nursery:"Smart Tots Day Nursery",zone:"BlueWater",isHR:false,email:"smarttots@completechildcare.co.uk"},
+  {name:"Saltway Day Nursery",nursery:"Saltway Day Nursery",zone:"BlueWater",isHR:false,email:"saltway@completechildcare.co.uk"},
+  {name:"Cedars Day Nursery",nursery:"Cedars Day Nursery",zone:"BlueWater",isHR:false,email:"cedars@completechildcare.co.uk"},
+  {name:"Cedars @ Boot Farm",nursery:"Cedars @ Boot Farm",zone:"BlueWater",isHR:false,email:"bootfarm@completechildcare.co.uk"},
+  {name:"Lower Earley Day Nursery",nursery:"Lower Earley Day Nursery",zone:"BlueWater",isHR:false,email:"lowerearley@completechildcare.co.uk"},
+  {name:"Our Den @ Hillside",nursery:"Our Den @ Hillside",zone:"BlueWater",isHR:false,email:"ourden@completechildcare.co.uk"},
+  {name:"Bramley Wood Day Nursery",nursery:"Bramley Wood Day Nursery",zone:"Greenwood",isHR:false,email:"bramleywood@completechildcare.co.uk"},
+  {name:"Hazebrouck Day Nursery",nursery:"Hazebrouck Day Nursery",zone:"Greenwood",isHR:false,email:"hazebrouck@completechildcare.co.uk"},
+  {name:"Kingsclere Day Nursery",nursery:"Kingsclere Day Nursery",zone:"Greenwood",isHR:false,email:"kingsclere@completechildcare.co.uk"},
+  {name:"Merrydale Day Nursery",nursery:"Merrydale Day Nursery",zone:"Greenwood",isHR:false,email:"merrydale@completechildcare.co.uk"},
+  {name:"Stepping Stones Day Nursery",nursery:"Stepping Stones Day Nursery",zone:"Greenwood",isHR:false,email:"steppingstones@completechildcare.co.uk"},
+  {name:"Happitots Day Nursery",nursery:"Happitots Day Nursery",zone:"Greenwood",isHR:false,email:"happitots@completechildcare.co.uk"},
+  {name:"Finchampstead Day Nursery",nursery:"Finchampstead Day Nursery",zone:"Greenwood",isHR:false,email:"finchampstead@completechildcare.co.uk"},
+  {name:"Woosehill Day Nursery",nursery:"Woosehill Day Nursery",zone:"Greenwood",isHR:false,email:"woosehill@completechildcare.co.uk"},
 ];
 const MGMT_LIST = [
-  {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,zone:"BlueWater"},
-  {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,zone:"Greenwood"},
-  {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,zone:"all"},
-  {name:"Emma McIntyre",nursery:"Head Office",title:"Chief Commercial Officer",isHR:true,zone:"all"},
+  {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,zone:"BlueWater",email:"pav.bilkhu@completechildcare.co.uk"},
+  {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,zone:"Greenwood",email:"Leanne.Maynard@completechildcare.co.uk"},
+  {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,zone:"all",email:"Ellie.Richards@completechildcare.co.uk"},
+  {name:"Emma McIntyre",nursery:"Head Office",title:"Chief Commercial Officer",isHR:true,zone:"all",email:"Emma.McIntyre@completechildcare.co.uk"},
   {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,zone:"all"},
-  {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,zone:"all"},
+  {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
   {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,zone:"all"},
 ];
 
@@ -1354,35 +1355,46 @@ function applySearchHint(catId){
    ================================================================ */
 populateIdentitySelect();
 
-// Auto-login via URL parameter: ?as=name (e.g. ?as=emma or ?as=louise)
+// ── Identity resolution: Teams SDK → URL param → stored session → manual picker
 (function(){
-  const params = new URLSearchParams(window.location.search);
-  const asParam = (params.get('as')||'').toLowerCase().trim();
-  if(asParam){
-    // Try to match against management list first, then nursery list
-    let matched = null;
-    MGMT_LIST.forEach((u,i)=>{
-      if(u.name.toLowerCase().includes(asParam)) matched={type:'m',idx:i};
-    });
-    if(!matched){
-      NURSERY_LIST.forEach((u,i)=>{
-        if(u.nursery.toLowerCase().includes(asParam)) matched={type:'n',idx:i};
-      });
-    }
-    if(matched){
-      SESSION = JSON.parse(JSON.stringify(matched.type==='m' ? MGMT_LIST[matched.idx] : NURSERY_LIST[matched.idx]));
-      storeSession(SESSION);
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      return;
-    }
+  function matchUserByEmail(upn){
+    if(!upn) return null;
+    const u=upn.toLowerCase();
+    for(let i=0;i<MGMT_LIST.length;i++){if((MGMT_LIST[i].email||'').toLowerCase()===u) return JSON.parse(JSON.stringify(MGMT_LIST[i]));}
+    for(let i=0;i<NURSERY_LIST.length;i++){if((NURSERY_LIST[i].email||'').toLowerCase()===u) return JSON.parse(JSON.stringify(NURSERY_LIST[i]));}
+    return null;
   }
-  // Fall back to stored session or show modal
-  SESSION=getStoredSession();
-  if(SESSION){
+  function signInAs(user){
+    SESSION=user; storeSession(SESSION);
     document.getElementById('identityModal').classList.remove('active');
     applySession();
   }
+  function fallback(){
+    // Try URL param ?as=name
+    const params=new URLSearchParams(window.location.search);
+    const asParam=(params.get('as')||'').toLowerCase().trim();
+    if(asParam){
+      let matched=null;
+      MGMT_LIST.forEach((u,i)=>{if(u.name.toLowerCase().includes(asParam)) matched={type:'m',idx:i};});
+      if(!matched) NURSERY_LIST.forEach((u,i)=>{if(u.nursery.toLowerCase().includes(asParam)) matched={type:'n',idx:i};});
+      if(matched){ signInAs(matched.type==='m'?MGMT_LIST[matched.idx]:NURSERY_LIST[matched.idx]); return; }
+    }
+    // Try stored session
+    const stored=getStoredSession();
+    if(stored){ signInAs(stored); return; }
+    // Show picker
+    document.getElementById('identityModal').classList.add('active');
+  }
+  // Try Teams SDK first
+  if(typeof microsoftTeams !== 'undefined'){
+    microsoftTeams.app.initialize().then(()=>{
+      microsoftTeams.app.getContext().then(ctx=>{
+        const upn=ctx&&ctx.user&&ctx.user.loginHint;
+        const matched=matchUserByEmail(upn);
+        if(matched){ signInAs(matched); } else { fallback(); }
+      }).catch(()=>{ fallback(); });
+    }).catch(()=>{ fallback(); });
+  } else { fallback(); }
 })();
 </script>
 </body>
