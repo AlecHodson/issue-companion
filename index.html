@@ -246,7 +246,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
   <div class="modal-box">
     <button class="modal-close" onclick="closeCriticalModal()">&#x2715;</button>
     <h3 style="color:var(--red);">&#9888; Critical Escalation</h3>
-    <p>This will send an <strong>immediate high-priority alert</strong> to Alec Hodson (Group CEO / DPO) and the relevant central function lead, with in-app notification, Teams message, and SMS.</p>
+    <p>This will send an <strong>immediate high-priority alert</strong> to Alec Hodson (Group CEO / DPO) as ultimate escalation authority, and Emma McIntyre (CCO) as intermediate escalation lead, with in-app notification, Teams message, and SMS. For all unresolved critical issues with compliance, safeguarding or litigation aspects, Alec Hodson is the final authority.</p>
     <div class="notice red" style="margin-bottom:20px;">Response target: <strong>within 2 hours.</strong> Use only when there is an immediate risk to children, staff, or regulatory standing.</div>
     <label class="field-label">Confirm: describe the immediate risk in one sentence</label>
     <div class="resolution-form">
@@ -441,9 +441,9 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
         <table class="routing-table">
           <tr><th>Rating</th><th>What it means</th><th>Response target</th><th>Who's notified</th></tr>
           <tr><td><span class="badge badge-low">Low</span></td><td>No immediate risk. Monitor and review.</td><td>7 days to resolve</td><td>You only (logged)</td></tr>
-          <tr><td><span class="badge badge-medium">Medium</span></td><td>Needs attention this week.</td><td>3 working days</td><td>Area Manager (if escalated)</td></tr>
-          <tr><td><span class="badge badge-high">High</span></td><td>Needs action within 24–48 hours.</td><td>48 hours</td><td>Area Manager + category lead</td></tr>
-          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Alec Hodson + category lead + SMS</td></tr>
+          <tr><td><span class="badge badge-medium">Medium</span></td><td>Needs attention this week.</td><td>3 working days</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
+          <tr><td><span class="badge badge-high">High</span></td><td>Needs action within 24–48 hours.</td><td>48 hours</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
+          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Emma McIntyre (CCO) + Alec Hodson (ultimate) + SMS</td></tr>
         </table>
       </div>
 
@@ -462,9 +462,9 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
         <p class="card-title">Key contacts</p>
         <table class="routing-table">
           <tr><th>Role</th><th>Person</th><th>Covers</th></tr>
-          <tr><td>Group CEO / DPO</td><td>Alec Hodson</td><td>All Critical escalations, Data Protection, Estates</td></tr>
+          <tr><td>Group CEO / DPO</td><td>Alec Hodson</td><td>Ultimate escalation — all unresolved critical issues with compliance, safeguarding or litigation aspects; Data Protection (DPO); Estates</td></tr>
           <tr><td>EA to Group CEO</td><td>Louise Medley</td><td>Secondary contact for all escalations — <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></td></tr>
-          <tr><td>Chief Commercial Officer</td><td>Emma McIntyre</td><td>Ratios &amp; cover, Standards &amp; quality, Complaints</td></tr>
+          <tr><td>Chief Commercial Officer</td><td>Emma McIntyre</td><td>Intermediate escalation for all categories (Tier 3) — receives unresolved issues from Area Managers across all 9 categories</td></tr>
           <tr><td>Compliance Lead</td><td>Ellie Richards</td><td>Safeguarding, H&amp;S, Standards, Compliance docs</td></tr>
           <tr><td>Area Manager — BlueWater</td><td>Pav Bilkhu</td><td>Abacus, Bees Knees, Northumberland, Smart Tots, Saltway, Cedars, Boot Farm, Lower Earley, Our Den</td></tr>
           <tr><td>Area Manager — Greenwood</td><td>Leanne Maynard</td><td>Bramley Wood, Finchampstead, Happitots, Hazebrouck, Kingsclere, Merrydale, Stepping Stones, Woosehill</td></tr>
@@ -533,16 +533,16 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
       <div class="card">
         <div class="notice amber" style="margin-bottom:14px;"><strong>Louise Medley (EA to Group CEO)</strong> is copied as a secondary contact on all escalations across every category. Email: <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></div>
         <table class="routing-table">
-          <tr><th>#</th><th>Category</th><th>Tier 2 Lead (High)</th><th>Tier 3 Lead (Critical)</th></tr>
-          <tr><td>01</td><td>Safeguarding — operational</td><td>Area Manager + Ellie Richards</td><td>Alec Hodson</td></tr>
-          <tr><td>02</td><td>Health &amp; safety</td><td>Area Manager + Ellie Richards</td><td>Alec Hodson</td></tr>
-          <tr><td>03</td><td>Ratios &amp; cover</td><td>Area Manager</td><td>Emma McIntyre</td></tr>
-          <tr><td>04</td><td>Standards &amp; quality</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre</td></tr>
-          <tr><td>05</td><td>Premises &amp; maintenance</td><td>Area Manager</td><td>Alec Hodson (Estates)</td></tr>
-          <tr><td>06</td><td>Compliance documentation</td><td>Ellie Richards</td><td>Alec Hodson</td></tr>
-          <tr><td>07</td><td>Data protection incident</td><td>Alec Hodson (DPO)</td><td>Alec Hodson</td></tr>
-          <tr><td>08</td><td>Complaint — compliance</td><td>Area Manager + Emma McIntyre</td><td>Alec Hodson</td></tr>
-          <tr><td>09</td><td>Other</td><td>Area Manager</td><td>Alec Hodson</td></tr>
+          <tr><th>#</th><th>Category</th><th>Tier 2 — first escalation</th><th>Tier 3 — unresolved (Emma McIntyre)</th><th>Tier 4 — critical/ultimate (Alec Hodson)</th></tr>
+          <tr><td>01</td><td>Safeguarding — operational</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>02</td><td>Health &amp; safety</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>03</td><td>Ratios &amp; cover</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>04</td><td>Standards &amp; quality</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>05</td><td>Premises &amp; maintenance</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson (Estates)</td></tr>
+          <tr><td>06</td><td>Compliance documentation</td><td>Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>07</td><td>Data protection incident</td><td>Alec Hodson (DPO)</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>08</td><td>Complaint — compliance</td><td>Area Manager + Emma McIntyre</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>09</td><td>Other</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
         </table>
       </div>
       <div class="card">
@@ -769,15 +769,15 @@ const COPILOT_KB = {
 };
 
 const ROUTING = {
-  "01": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Alec Hodson"},
-  "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Alec Hodson"},
-  "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)"},
-  "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)"},
-  "05": {tier2:"Area Manager",tier3:"Alec Hodson (Estates)"},
-  "06": {tier2:"Ellie Richards (Compliance)",tier3:"Alec Hodson"},
-  "07": {tier2:"Alec Hodson (DPO)",tier3:"Alec Hodson"},
-  "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Alec Hodson"},
-  "09": {tier2:"Area Manager",tier3:"Alec Hodson"}
+  "01": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "05": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson (Estates)"},
+  "06": {tier2:"Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "07": {tier2:"Alec Hodson (DPO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "09": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"}
 };
 
 const ZONE_AM = {BlueWater:"Pav Bilkhu",Greenwood:"Leanne Maynard"};
@@ -951,11 +951,11 @@ function showCopilotResponse(desc){
   const routing=ROUTING[selectedCat]||ROUTING['09'];
   let ratingText='';
   if(governingLevel==='critical'){
-    ratingText='This issue is rated <strong>Critical</strong>. An immediate alert will be sent to '+routing.tier3+' and the category lead, with Teams notification and SMS.';
+    ratingText='This issue is rated <strong>Critical</strong>. Immediate alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO), with Teams notification and SMS. For unresolved compliance, safeguarding or litigation issues, '+routing.tier4+' is the final authority.';
   } else if(governingLevel==='high'){
-    ratingText='This issue is rated <strong>High</strong>. Escalation routes to '+routing.tier2+' with a 24–48 hour response target.';
+    ratingText='This issue is rated <strong>High</strong>. Escalation routes first to '+routing.tier2+' (24–48 hour response target). If unresolved, escalates to '+routing.tier3+'.';
   } else if(governingLevel==='medium'){
-    ratingText='This issue is rated <strong>Medium</strong>. If you escalate, it routes to '+routing.tier2+' with a 3 working day response target.';
+    ratingText='This issue is rated <strong>Medium</strong>. If you escalate, it routes to '+routing.tier2+' (3 working day response target). If unresolved, escalates to '+routing.tier3+'.';
   } else {
     ratingText='This issue is rated <strong>Low</strong>. No escalation required — log it, take the first steps, and monitor.';
   }
@@ -965,8 +965,8 @@ function showCopilotResponse(desc){
   const governingLabel=LEVEL_LABEL[governingLevel];
   document.getElementById('escalateBtn').textContent='Escalate as '+governingLabel;
   document.getElementById('escalateDesc').textContent=governingLevel==='critical'?
-    'Sends an immediate alert to '+routing.tier3+' with Teams notification and SMS.':
-    'Routes to '+routing.tier2+' with the appropriate response target.';
+    'Sends an immediate alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO). Unresolved compliance, safeguarding or litigation issues escalate to '+routing.tier4+'.':
+    'Routes to '+routing.tier2+'. If unresolved, escalates to '+routing.tier3+'.';
 
   document.getElementById('copilotPanel').classList.add('show');
   document.getElementById('copilotPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
