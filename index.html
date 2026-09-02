@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -263,6 +264,41 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
   .page{padding:24px 18px 80px;}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+<style>
+/* ===== ISSUE DETAIL / THREAD VIEW ===== */
+.thread-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.thread-meta{font-size:12.5px;color:var(--grey);margin-top:4px;}
+.thread-meta span{margin-right:14px;}
+.thread-body{background:var(--paper-2);border-radius:10px;padding:16px 18px;font-size:14px;line-height:1.6;margin-bottom:24px;white-space:pre-wrap;}
+.comment-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
+.comment-item{border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;}
+.comment-item.from-mgmt{background:var(--purple-tint);border-left:3px solid var(--purple-mid);}
+.comment-item.from-nursery{background:var(--amber-tint);border-left:3px solid var(--amber);}
+.comment-author{font-weight:700;font-size:12.5px;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.comment-time{font-size:11px;color:var(--grey);font-weight:400;}
+.comment-text{white-space:pre-wrap;}
+.reply-box{margin-top:8px;}
+.reply-box textarea{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--font-body);font-size:13.5px;resize:vertical;}
+.reply-box textarea:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.status-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--paper-2);border-radius:10px;}
+.status-row label{font-size:12.5px;font-weight:600;color:var(--grey);}
+.status-row select{padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;color:var(--ink);background:#fff;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;padding:0;margin-bottom:16px;font-family:var(--font-body);}
+.back-btn:hover{text-decoration:underline;}
+.auth-overlay{position:fixed;inset:0;background:rgba(27,18,40,0.88);z-index:9998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.auth-box{background:var(--white);border-radius:16px;padding:36px 32px;max-width:440px;width:90%;box-shadow:0 24px 60px -10px rgba(27,18,40,0.45);text-align:center;}
+.auth-box h2{margin-bottom:10px;}
+.auth-box p{font-size:13.5px;color:var(--grey);margin-bottom:24px;}
+.auth-btn{padding:13px 28px;background:var(--purple-deep);color:#fff;border:none;border-radius:9px;font-family:var(--font-body);font-size:14.5px;font-weight:600;cursor:pointer;}
+.auth-btn:hover{background:var(--purple-mid);}
+.loading-overlay{position:fixed;inset:0;background:rgba(245,239,226,0.85);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-overlay .spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--purple-mid);border-radius:50%;animation:spin .7s linear infinite;}
+.loading-overlay p{font-size:14px;color:var(--grey);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--purple-deep);color:#fff;padding:12px 24px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+.issue-row{cursor:pointer;transition:background .1s;}
+.issue-row:hover td{background:var(--purple-tint)!important;}
 </style>
 </head>
 <body>
@@ -620,15 +656,69 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
       </div>
     </div>
 
+
+    <!-- ===== ISSUE DETAIL (thread view) ===== -->
+    <div class="page" id="page-issuedetail">
+      <div class="page-header">
+        <button class="back-btn" id="backBtn" onclick="goBack()">&#8592; Back</button>
+        <div class="page-eyebrow" id="detailEyebrow">Issue detail</div>
+        <h1 id="detailTitle">Issue</h1>
+      </div>
+      <div class="card" id="detailCard">
+        <div id="detailContent">
+          <div class="spinner" style="margin:40px auto;display:block;"></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /app -->
 
 <!-- Panic button -->
 <button class="panic-btn" id="panicBtn" onclick="triggerCriticalEscalation()"><span class="panic-dot"></span> Critical escalation</button>
 
+
+<!-- ===== MSAL AUTH OVERLAY ===== -->
+<div class="auth-overlay" id="authOverlay" style="display:none;">
+  <div class="auth-box">
+    <div style="margin-bottom:18px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
+    <h2>Sign in required</h2>
+    <p>Sign in with your Complete Childcare Microsoft 365 account to use the Issue Companion.</p>
+    <button class="auth-btn" onclick="msalSignIn()">Sign in with Microsoft</button>
+    <div id="authError" style="display:none;margin-top:14px;font-size:12.5px;color:var(--red);"></div>
+  </div>
+</div>
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none;">
+  <div class="spinner"></div>
+  <p id="loadingMsg">Loading...</p>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+
+<script>
 <script>
 /* ================================================================
-   DATA
+   CONFIG
+   ================================================================ */
+const MSAL_CONFIG = {
+  auth: {
+    clientId: 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a',
+    authority: 'https://login.microsoftonline.com/c498c1f7-99ac-42e6-bd6f-e819bf40f167',
+    redirectUri: window.location.href.split('?')[0].split('#')[0]
+  },
+  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+};
+const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.All', 'Mail.Send'];
+const DRIVE_ID = 'b!iJr5xECL0UOQJ9Tvhe9ldRBI2wy_aKhHrZwoRpGOclMsrpjKrYXdToViItPPv4Fn';
+const ISSUES_PATH = 'IssueCompanion/issues';
+const COMMENTS_PATH = 'IssueCompanion/comments';
+
+/* ================================================================
+   DATA — USERS
    ================================================================ */
 const NURSERY_LIST = [
   {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false,email:"abacus@completechildcare.co.uk"},
@@ -649,20 +739,191 @@ const NURSERY_LIST = [
   {name:"Finchampstead Day Nursery",nursery:"Finchampstead Day Nursery",zone:"Greenwood",isHR:false,email:"finchampstead@completechildcare.co.uk"},
   {name:"Woosehill Day Nursery",nursery:"Woosehill Day Nursery",zone:"Greenwood",isHR:false,email:"woosehill@completechildcare.co.uk"},
 ];
+
 const MGMT_LIST = [
-  {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,zone:"BlueWater",email:"pav.bilkhu@completechildcare.co.uk"},
-  {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,zone:"Greenwood",email:"Leanne.Maynard@completechildcare.co.uk"},
-  {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,zone:"all",email:"Ellie.Richards@completechildcare.co.uk"},
-  {name:"Emma McIntyre",nursery:"Head Office",title:"Chief Commercial Officer",isHR:true,zone:"all",email:"Emma.McIntyre@completechildcare.co.uk"},
-  {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,zone:"all"},
-  {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
-  {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,zone:"all"},
+  {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,canViewDashboard:true,zone:"BlueWater",email:"pav.bilkhu@completechildcare.co.uk"},
+  {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,canViewDashboard:true,zone:"Greenwood",email:"Leanne.Maynard@completechildcare.co.uk"},
+  {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,canViewDashboard:true,zone:"all",email:"Ellie.Richards@completechildcare.co.uk"},
+  {name:"Emma McIntyre",nursery:"Head Office",title:"Chief Commercial Officer",isHR:true,canViewDashboard:true,zone:"all",email:"Emma.McIntyre@completechildcare.co.uk"},
+  {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,canViewDashboard:false,zone:"all",email:"karen.tate@completechildcare.co.uk"},
+  {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,canViewDashboard:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
+  {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,canViewDashboard:true,zone:"all",email:"louise.medley@completechildcare.co.uk"},
 ];
 
 /* ================================================================
    COPILOT KNOWLEDGE BASE
    ================================================================ */
 
+// ─── SOURCE CITATION HELPER ──────────────────────────────────────────────────
+function sourcesPanel(sources) {
+  const icons = { ccg:'📄', acas:'⚖️', gov:'🏛️' };
+  const colours = { ccg:'var(--purple-tint)', acas:'var(--amber-tint)', gov:'#EAF0FB' };
+  const textCol = { ccg:'var(--purple-deep)', acas:'#7A5A1A', gov:'#1a3a6a' };
+  let rows = sources.map(s => {
+    const ic2 = icons[s.type] || '🔗';
+    const bg = colours[s.type] || '#f5f5f5';
+    const tc = textCol[s.type] || '#333';
+    return `<a href="${s.url}" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:8px;padding:7px 10px;
+             background:${bg};border-radius:6px;text-decoration:none;
+             color:${tc};font-size:12px;font-weight:600;border:1px solid rgba(0,0,0,0.07);
+             transition:opacity .15s;" onmouseover="this.style.opacity='.75'"
+             onmouseout="this.style.opacity='1'">
+      <span>${ic2}</span>
+      <span style="flex:1;">${s.label}</span>
+      <span style="font-size:10px;opacity:.6;">↗</span>
+    </a>`;
+  }).join('');
+  return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
+    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+                color:#888;margin-bottom:7px;font-family:var(--font-mono);">
+      Sources consulted
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
+  </div>`;
+}
+
+const COPILOT_KB = {
+  "01": {
+    policy: "All visitors must be signed in and out using the visitor log. External contractors must produce ID and be accompanied by a member of staff at all times. Building perimeter security checks must be completed at the start and end of each session. Any unauthorised person on site must be treated as an immediate safeguarding concern.",
+    source: "CCG Safeguarding Policy — Visitor Access and Site Security, Section 3.1",
+    steps: [
+      "Secure the building perimeter immediately if there is an active security concern.",
+      "Do not confront an unauthorised person alone — contact a colleague and call 999 if necessary.",
+      "Complete the visitor log and note any anomalies with times and descriptions.",
+      "Review your CCTV footage if available and retain it.",
+      "Notify your Area Manager and Ellie Richards (Compliance) of any breach today."
+    ],
+    criticalKeywords: ["child missing","intruder","unauthorised adult","lock-in","lock-out","police"],
+    highKeywords: ["visitor unsigned","access breach","gate left open","door unsecured","contractor unaccompanied"],
+    sources: [{label:'CCG Employee Handbook — Safeguarding', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'Gov.uk: DBS checks', url:'https://www.gov.uk/dbs-check-applicant-criminal-record', type:'gov'}]
+  },
+  "02": {
+    policy: "All accidents, near misses, and hazards must be recorded in the accident/incident log on the day they occur. Fire doors must be maintained in self-closing order at all times — any failure is an immediate hazard requiring interim control. RIDDOR-reportable incidents (specified injuries, over-7-day incapacitation, dangerous occurrences) must be reported to the HSE within the required timeframe.",
+    source: "CCG Health & Safety Policy — Accident Reporting and Fire Safety, Sections 2.1 and 4.2",
+    steps: [
+      "Ensure the immediate area is safe and any injured person receives appropriate first aid.",
+      "Record the incident in the accident/incident log with full details — time, location, people involved, witnesses.",
+      "Photograph any hazard or defect before it is made safe, for the record.",
+      "Implement an interim control immediately (e.g. close the room, assign a staff member to monitor).",
+      "Assess whether this is RIDDOR-reportable and notify Alec Hodson if in any doubt."
+    ],
+    criticalKeywords: ["fire door","fire alarm","gas leak","flood","structural damage","child injured","ambulance","hospital","RIDDOR","evacuation","intruder","lock-in","lock-out","medication error","allergy","anaphylaxis"],
+    highKeywords: ["broken equipment","hazard","near miss","pest","food contamination","damp","mould","trip","slip"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'Gov.uk: Report an accident (RIDDOR)', url:'https://www.gov.uk/report-an-accident-at-work', type:'gov'}]
+  },
+  "03": {
+    policy: "Minimum staffing ratios must be maintained at all times: 1:3 for children under 2, 1:5 for 2-year-olds, 1:8 for 3–5 year-olds. A breach of ratio is a regulatory non-compliance and must be corrected immediately. Emergency cover procedures must be activated if a ratio breach cannot be resolved within 15 minutes.",
+    source: "CCG Staffing Ratio Policy and EYFS Statutory Framework (2024), Section 3.29–3.38",
+    steps: [
+      "Identify which room(s) are affected and the current ratio in each.",
+      "Immediately move available qualified staff to cover the affected room.",
+      "Contact your Area Manager now — do not wait to see if it resolves itself.",
+      "Do not accept children into a room that is below ratio until cover is in place.",
+      "Document the breach, the time it occurred, the duration, and how it was resolved."
+    ],
+    criticalKeywords: ["ratio breach","below ratio","uncovered room","no qualified staff","no first aider","room closed","children unsupervised"],
+    highKeywords: ["short staffed","cover needed","ratio at risk","no spare cover","agency needed"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework — Ratios', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}]
+  },
+  "04": {
+    policy: "Settings must deliver the EYFS Statutory Framework at all times. Observed practice that falls below the expected standard must be addressed promptly through coaching, supervision, and where necessary formal performance management. Self-evaluation should be ongoing and documented. Any concern that a setting's practice poses a risk to children's welfare must be escalated to the Area Manager immediately.",
+    source: "EYFS Statutory Framework (Sept 2024) and CCG Quality Standards Policy",
+    steps: [
+      "Document the specific practice concern with dates, times, and what was observed.",
+      "Speak to the member of staff involved in a supportive, non-confrontational way and note the conversation.",
+      "Review your most recent self-evaluation and identify whether this is an isolated concern or a pattern.",
+      "Agree an improvement action with the staff member and set a review date.",
+      "Notify your Area Manager if the concern relates to child welfare or repeated non-compliance."
+    ],
+    criticalKeywords: ["child at risk","welfare concern","unsafe practice","Ofsted notifiable","immediate risk","harm"],
+    highKeywords: ["practice concern","EYFS gap","repeated issue","non-compliance","observation concern"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'ACAS: Performance management', url:'https://www.acas.org.uk/performance-management', type:'acas'}]
+  },
+  "05": {
+    policy: "All premises defects must be reported to the maintenance log on the day they are identified. Any defect that creates an immediate risk (structural, electrical, water ingress, heating failure in winter) must be treated as urgent and reported to the Estates lead (Alec Hodson) the same day. Contractors must be managed in line with the Contractor Management Policy — ID checked, induction completed, work supervised.",
+    source: "CCG Premises and Maintenance Procedure, Section 2.1",
+    steps: [
+      "Log the defect in the premises maintenance record with a photograph if possible.",
+      "Assess whether the defect creates an immediate risk — if yes, close the affected area immediately.",
+      "Contact your maintenance contractor for an urgent callout if the risk is immediate.",
+      "Notify your Area Manager and Alec Hodson (Estates) if the issue cannot be made safe today.",
+      "Do not allow children or staff into an area that cannot be made safe."
+    ],
+    criticalKeywords: ["structural damage","ceiling collapse","gas leak","flood","electrical fault","heating failure","boiler","no hot water in winter","fire door"],
+    highKeywords: ["broken equipment","leak","damp","mould","pest","door not locking","window broken","playground hazard"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework — Premises', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}]
+  },
+  "06": {
+    policy: "All staff must have a valid enhanced DBS check on the Disclosure and Barring Service Update Service before starting work with children. DBS certificates must be reviewed annually. Paediatric First Aid qualifications must be renewed every 3 years. Any lapse in a required certification must be flagged to the HR team and the staff member must not work unsupervised with children until the certification is renewed.",
+    source: "CCG DBS Check Policy and Certification Register Procedure",
+    steps: [
+      "Identify the staff member(s) affected and the specific certification(s) that have lapsed or are missing.",
+      "Immediately arrange for the staff member to be supervised at all times if their DBS or PFA has lapsed.",
+      "Contact HR (Ellie Richards) today to initiate the renewal process.",
+      "Do not allow unsupervised contact with children until the issue is resolved.",
+      "Document the lapse, the date identified, and the steps taken in the compliance register."
+    ],
+    criticalKeywords: ["no DBS","DBS expired","DBS lapsed","working without DBS","no first aider","PFA expired","safeguarding training lapsed"],
+    highKeywords: ["DBS overdue","certificate expiring","renewal needed","compliance gap","training lapsed"],
+    sources: [{label:'CCG Employee Handbook — DBS & Certification', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'Gov.uk: DBS checks', url:'https://www.gov.uk/dbs-check-applicant-criminal-record', type:'gov'}, {label:'Gov.uk: Right to work checks', url:'https://www.gov.uk/check-job-applicant-right-to-work', type:'gov'}]
+  },
+  "07": {
+    policy: "Any personal data incident — including lost devices, misdirected emails containing personal data, or unauthorised access to records — must be reported to the Data Protection Officer (Alec Hodson) within 24 hours of discovery. The DPO will assess whether the incident must be reported to the ICO within 72 hours of the organisation becoming aware. Do not attempt to recover a lost device yourself — contact IT support immediately.",
+    source: "CCG Data Protection Policy — Breach Notification Procedure, Section 5",
+    steps: [
+      "Stop any ongoing breach immediately — if a device is lost, report to IT to enable remote wipe.",
+      "Do not attempt to contact the unintended recipient of a misdirected email yourself — this can make things worse.",
+      "Notify Alec Hodson (DPO) immediately — do not wait until the end of the day.",
+      "Write down everything you know: what data was involved, how many people affected, when it happened.",
+      "Alec Hodson will assess whether ICO notification is required within 72 hours."
+    ],
+    criticalKeywords: ["data breach","personal data shared","lost device","misdirected email","ICO","unauthorised access","data lost","GDPR breach"],
+    highKeywords: ["email sent wrong","device missing","access issue","file shared incorrectly","data concern"],
+    sources: [{label:'CCG Employee Handbook — Data Protection', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: Data Protection Act 2018', url:'https://www.legislation.gov.uk/ukpga/2018/12/contents', type:'gov'}, {label:'ICO: Report a breach', url:'https://ico.org.uk/for-organisations/report-a-breach/', type:'gov'}]
+  },
+  "08": {
+    policy: "All complaints with a compliance dimension must be logged in the complaints register on the day they are received. The manager must acknowledge the complaint in writing within 2 working days. If the complaint relates to child welfare, safeguarding, or a potential Ofsted-notifiable event, it must be escalated to the Area Manager and Emma McIntyre (CCO) immediately. Parents have the right to escalate unresolved complaints directly to Ofsted.",
+    source: "CCG Complaints Policy and Ofsted Notification Triggers Guidance",
+    steps: [
+      "Log the complaint in the complaints register with full details — date, parent name, nature of complaint.",
+      "Acknowledge receipt to the parent in writing within 2 working days.",
+      "Assess whether the complaint relates to child welfare or a potential Ofsted-notifiable event — if yes, escalate now.",
+      "Notify your Area Manager and Emma McIntyre (CCO) if the complaint is serious or complex.",
+      "Do not make any admission of liability or offer of compensation without approval from senior management."
+    ],
+    criticalKeywords: ["Ofsted complaint","regulatory complaint","child welfare complaint","safeguarding complaint","formal complaint","legal action"],
+    highKeywords: ["parent complaint","formal complaint","written complaint","serious concern","complaint escalated"],
+    sources: [{label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'ACAS: Discipline & grievance hub', url:'https://www.acas.org.uk/discipline-and-grievance', type:'acas'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}]
+  },
+  "09": {
+    policy: "If your issue does not fit any of the categories above, log it here and your Area Manager will review it and route it to the right person. Provide as much detail as possible so the issue can be correctly categorised and actioned.",
+    source: "CCG General Escalation Guidance",
+    steps: [
+      "Describe the issue in as much detail as possible.",
+      "Note any immediate risks or actions you have already taken.",
+      "Your Area Manager will review this and contact you within 3 working days.",
+      "If you believe there is an immediate risk, use the Critical escalation button instead."
+    ],
+    criticalKeywords: ["immediate risk","urgent","emergency","child at risk","staff at risk"],
+    highKeywords: ["urgent","serious","significant","cannot wait"],
+    sources: [{label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'ACAS: Discipline & grievance hub', url:'https://www.acas.org.uk/discipline-and-grievance', type:'acas'}, {label:'Gov.uk: Employment rights', url:'https://www.gov.uk/browse/working/rights-trade-unions', type:'gov'}]
+  }
+};
+
+const ROUTING = {
+  "01": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "05": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson (Estates)"},
+  "06": {tier2:"Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "07": {tier2:"Alec Hodson (DPO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "09": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"}
+};
+
+const ZONE_AM = {BlueWater:'Pav Bilkhu',Greenwood:'Leanne Maynard'};
 // ─── SOURCE CITATION HELPER ──────────────────────────────────────────────────
 function sourcesPanel(sources) {
   const icons = { ccg:'📄', acas:'⚖️', gov:'🏛️' };
@@ -1438,6 +1699,931 @@ const CAT_NAMES = {
   '07':'Data protection incident','08':'Complaint — compliance','09':'Other'
 };
 
+/* ================================================================
+   MSAL AUTH + GRAPH HELPERS
+   ================================================================ */
+var msalInstance = null;
+var graphToken = null;
+var tokenExpiry = 0;
+var SESSION = null;
+var previousPage = 'log';
+
+function initMSAL(){
+  try {
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    return msalInstance.initialize();
+  } catch(e) {
+    console.error('MSAL init failed:', e);
+    return Promise.resolve();
+  }
+}
+
+async function getGraphToken(){
+  if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
+  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(!accounts.length) return null;
+  try {
+    const resp = await msalInstance.acquireTokenSilent({
+      scopes: GRAPH_SCOPES,
+      account: accounts[0]
+    });
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    return graphToken;
+  } catch(e) {
+    graphToken = null;
+    return null;
+  }
+}
+
+async function graphFetch(method, path, body){
+  const token = await getGraphToken();
+  if(!token) throw new Error('Not authenticated');
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    }
+  };
+  if(body !== undefined) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+  const resp = await fetch('https://graph.microsoft.com/v1.0' + path, opts);
+  if(resp.status === 204) return null;
+  const text = await resp.text();
+  if(!text) return null;
+  try { return JSON.parse(text); } catch(e) { return text; }
+}
+
+async function msalSignIn(){
+  document.getElementById('authError').style.display = 'none';
+  try {
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    document.getElementById('authOverlay').style.display = 'none';
+    await resolveIdentityFromGraph();
+  } catch(e) {
+    const err = document.getElementById('authError');
+    err.textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
+    err.style.display = 'block';
+  }
+}
+
+/* ================================================================
+   SHAREPOINT DATA LAYER
+   ================================================================ */
+async function spReadJSON(path){
+  try {
+    const token = await getGraphToken();
+    if(!token) return null;
+    // Get download URL first
+    const meta = await graphFetch('GET', '/drives/' + DRIVE_ID + '/root:/' + path + ':/content');
+    return meta; // graphFetch returns parsed JSON
+  } catch(e) { return null; }
+}
+
+async function spWriteJSON(path, data){
+  const token = await getGraphToken();
+  if(!token) throw new Error('Not authenticated');
+  const resp = await fetch(
+    'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }
+  );
+  if(!resp.ok) throw new Error('Write failed: ' + resp.status);
+  return await resp.json();
+}
+
+async function spListFolder(folderPath){
+  try {
+    const result = await graphFetch('GET', '/drives/' + DRIVE_ID + '/root:/' + folderPath + ':/children?$select=name,id,lastModifiedDateTime&$top=500');
+    return result && result.value ? result.value : [];
+  } catch(e) { return []; }
+}
+
+async function spDeleteFile(path){
+  try {
+    await graphFetch('DELETE', '/drives/' + DRIVE_ID + '/root:/' + path);
+  } catch(e) {}
+}
+
+/* ================================================================
+   ISSUE CRUD
+   ================================================================ */
+async function getAllIssues(){
+  showLoading('Loading issues...');
+  try {
+    const files = await spListFolder(ISSUES_PATH);
+    const issues = [];
+    // Fetch all in parallel (batch of 20)
+    const chunks = [];
+    for(let i=0;i<files.length;i+=20) chunks.push(files.slice(i,i+20));
+    for(const chunk of chunks){
+      const batch = await Promise.all(chunk.map(f => spReadJSON(ISSUES_PATH + '/' + f.name).catch(()=>null)));
+      batch.forEach(d => { if(d && d.id) issues.push(d); });
+    }
+    return issues.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } finally { hideLoading(); }
+}
+
+async function getMyIssues(){
+  const all = await getAllIssues();
+  if(!SESSION) return all;
+  if(SESSION.canViewDashboard) return all;
+  return all.filter(i => i.nursery === SESSION.nursery);
+}
+
+async function writeIssue(issue){
+  await spWriteJSON(ISSUES_PATH + '/' + issue.id + '.json', issue);
+}
+
+async function getIssueById(id){
+  return await spReadJSON(ISSUES_PATH + '/' + id + '.json');
+}
+
+async function getCommentsForIssue(issueId){
+  try {
+    const files = await spListFolder(COMMENTS_PATH);
+    const matching = files.filter(f => f.name.startsWith(issueId + '_'));
+    const comments = await Promise.all(matching.map(f => spReadJSON(COMMENTS_PATH + '/' + f.name).catch(()=>null)));
+    return comments.filter(Boolean).sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+  } catch(e) { return []; }
+}
+
+async function writeComment(comment){
+  const filename = comment.issueId + '_' + comment.id + '.json';
+  await spWriteJSON(COMMENTS_PATH + '/' + filename, comment);
+}
+
+/* ================================================================
+   EMAIL NOTIFICATIONS (via logged-in user's Graph Mail.Send)
+   ================================================================ */
+async function sendEmail(to, subject, htmlBody){
+  try {
+    await graphFetch('POST', '/me/sendMail', {
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: htmlBody },
+        toRecipients: (Array.isArray(to) ? to : [to]).map(addr => ({
+          emailAddress: { address: addr }
+        }))
+      },
+      saveToSentItems: true
+    });
+    return true;
+  } catch(e) {
+    console.warn('Email send failed:', e);
+    return false;
+  }
+}
+
+function issueEmailBody(issue, extraMsg){
+  const url = window.location.href.split('?')[0];
+  return `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+  <div style="background:#3B1F6A;padding:18px 24px;border-radius:8px 8px 0 0;">
+    <img src="https://www.completechildcare.co.uk/img/logo.png" style="height:36px;" alt="Complete Childcare Group"/>
+  </div>
+  <div style="background:#F5EFE2;padding:24px;border-radius:0 0 8px 8px;border:1px solid #D8CDB5;">
+    <h2 style="color:#2A1450;margin:0 0 12px;">${issue.catName} — ${issue.nursery}</h2>
+    <p style="margin:0 0 8px;"><strong>Reference:</strong> ${issue.id}</p>
+    <p style="margin:0 0 8px;"><strong>Severity:</strong> ${LEVEL_LABEL[issue.governingRating]||issue.governingRating}</p>
+    <p style="margin:0 0 8px;"><strong>Status:</strong> ${issue.status.charAt(0).toUpperCase()+issue.status.slice(1)}</p>
+    <p style="margin:0 0 16px;"><strong>Logged by:</strong> ${issue.loggedBy}</p>
+    ${extraMsg ? '<div style="background:#EDE8F5;border-left:3px solid #5a2f85;padding:12px 16px;border-radius:0 6px 6px 0;margin-bottom:16px;">' + extraMsg + '</div>' : ''}
+    <p style="margin:0 0 16px;"><strong>Original description:</strong><br/>${(issue.desc||'').replace(/\n/g,'<br/>')}</p>
+    <a href="${url}" style="display:inline-block;background:#3B1F6A;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Open Issue Companion</a>
+    <p style="margin:16px 0 0;font-size:11px;color:#888;">This is an automated notification from the CCG Issue Companion. Please do not reply to this email — use the Issue Companion to respond.</p>
+  </div>
+</div>`;
+}
+
+/* ================================================================
+   STATE
+   ================================================================ */
+var selectedCat = null;
+var selectedUrgency = null;
+var copilotAssessedLevel = null;
+var currentIssueId = null;
+var resolveTargetId = null;
+var currentDetailIssueId = null;
+
+
+/* ================================================================
+   UI HELPERS
+   ================================================================ */
+function showLoading(msg){ 
+  const o=document.getElementById('loadingOverlay');
+  if(o){o.style.display='flex'; document.getElementById('loadingMsg').textContent=msg||'Loading...';}
+}
+function hideLoading(){ 
+  const o=document.getElementById('loadingOverlay');
+  if(o) o.style.display='none';
+}
+function showToast(msg, dur){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur||3000);
+}
+
+const LEVEL_LABEL={low:'Low',medium:'Medium',high:'High',critical:'Critical'};
+const LEVEL_ORDER={low:0,medium:1,high:2,critical:3};
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function showPage(id, btn){
+  const mgmtPages = ['dashboard','allissues','routing'];
+  if(mgmtPages.includes(id) && !(SESSION && SESSION.canViewDashboard)){
+    showToast('You do not have permission to view this page.');
+    return;
+  }
+  previousPage = document.querySelector('.page.active')?.id?.replace('page-','') || 'log';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navlist button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='myissues') renderMyIssues();
+  if(id==='dashboard') renderDashboard();
+  if(id==='allissues') renderAllIssues();
+}
+
+function goBack(){
+  showPage(previousPage || 'log');
+}
+
+/* ================================================================
+   IDENTITY
+   ================================================================ */
+function getStoredSession(){try{return JSON.parse(sessionStorage.getItem('icSession')||'null');}catch(e){return null;}}
+function storeSession(s){try{sessionStorage.setItem('icSession',JSON.stringify(s));}catch(e){}}
+
+function matchUserByEmail(email){
+  if(!email) return null;
+  const e = email.toLowerCase();
+  for(const u of MGMT_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
+  for(const u of NURSERY_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
+  return null;
+}
+
+function matchUserByDisplayName(name){
+  if(!name) return null;
+  const n = name.toLowerCase();
+  for(const u of MGMT_LIST){ if(u.name.toLowerCase()===n) return Object.assign({},u); }
+  return null;
+}
+
+function populateIdentitySelect(){
+  const sel=document.getElementById('idSelect');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Select your nursery or name —</option>';
+  const ng=document.createElement('optgroup'); ng.label='Nurseries';
+  NURSERY_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='n:'+i;o.textContent=u.nursery;ng.appendChild(o);});
+  sel.appendChild(ng);
+  const mg=document.createElement('optgroup'); mg.label='Management & Head Office';
+  MGMT_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='m:'+i;o.textContent=u.name+' — '+u.title;mg.appendChild(o);});
+  sel.appendChild(mg);
+}
+
+function confirmIdentity(){
+  const sel=document.getElementById('idSelect'); const val=sel.value;
+  if(!val){document.getElementById('idError').style.display='block';return;}
+  document.getElementById('idError').style.display='none';
+  SESSION = val.startsWith('n:') ? Object.assign({},NURSERY_LIST[parseInt(val.slice(2))]) : Object.assign({},MGMT_LIST[parseInt(val.slice(2))]);
+  storeSession(SESSION);
+  document.getElementById('identityModal').classList.remove('active');
+  applySession();
+}
+
+function clearIdentity(){
+  try{sessionStorage.removeItem('icSession');}catch(e){}
+  SESSION=null; graphToken=null;
+  document.getElementById('identityModal').classList.add('active');
+  populateIdentitySelect();
+}
+
+function applySession(){
+  if(!SESSION) return;
+  document.getElementById('sessionUserName').textContent = SESSION.name||SESSION.nursery;
+  document.getElementById('sessionNursery').textContent = SESSION.isHR ? (SESSION.title+' — '+SESSION.nursery) : SESSION.nursery;
+  if(SESSION.canViewDashboard){
+    document.getElementById('mgmtNavSection').style.display='block';
+    document.getElementById('mgmtNavlist').style.display='flex';
+  } else {
+    document.getElementById('mgmtNavSection').style.display='none';
+    document.getElementById('mgmtNavlist').style.display='none';
+  }
+}
+
+async function resolveIdentityFromGraph(){
+  showLoading('Signing you in...');
+  try {
+    const me = await graphFetch('GET', '/me?$select=displayName,mail,userPrincipalName');
+    const email = me.mail || me.userPrincipalName || '';
+    let user = matchUserByEmail(email);
+    if(!user) user = matchUserByDisplayName(me.displayName||'');
+    if(user){
+      SESSION = user;
+      storeSession(SESSION);
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+    } else {
+      // Graph auth worked but user not in our list — show manual picker
+      document.getElementById('identityModal').classList.add('active');
+      populateIdentitySelect();
+    }
+  } catch(e){
+    document.getElementById('identityModal').classList.add('active');
+    populateIdentitySelect();
+  } finally { hideLoading(); }
+}
+
+/* ================================================================
+   ISSUE LOGGING
+   ================================================================ */
+function selectCat(tile){
+  document.querySelectorAll('.cat-tile').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  selectedCat=tile.getAttribute('data-cat');
+  const name=tile.getAttribute('data-name');
+  document.getElementById('logCardTitle').textContent='Log an issue — '+name;
+  document.getElementById('logCardSub').textContent="Describe what's happening below, then rate how urgent it feels.";
+  document.getElementById('copilotPanel').classList.remove('show');
+  document.getElementById('confirmScreen').classList.remove('show');
+  document.getElementById('confirmScreen').style.display='none';
+  document.getElementById('logCard').querySelectorAll('.card-title,.card-sub,label,.desc-box,.char-hint,.urgency-row,.btn-row').forEach(e=>e.style.display='');
+}
+
+function selectUrgency(pill){
+  document.querySelectorAll('.urgency-pill').forEach(p=>p.classList.remove('active'));
+  pill.classList.add('active');
+  selectedUrgency=pill.getAttribute('data-level');
+}
+
+document.getElementById('descBox').addEventListener('input',function(){
+  document.getElementById('charHint').textContent=this.value.length+' characters';
+});
+
+function severityScore(text,catId){
+  const t=text.toLowerCase();
+  const kb=COPILOT_KB[catId]||COPILOT_KB['09'];
+  for(const kw of (kb.criticalKeywords||[])){if(t.includes(kw.toLowerCase()))return 'critical';}
+  for(const kw of (kb.highKeywords||[])){if(t.includes(kw.toLowerCase()))return 'high';}
+  const globalCrit=["child missing","police","ambulance","fire","gas leak","flood","RIDDOR","LADO","data breach","ratio breach"];
+  for(const kw of globalCrit){if(t.includes(kw.toLowerCase()))return 'critical';}
+  return null;
+}
+
+function openCopilotFromSidebar(){
+  const logBtn=document.querySelector('button[data-page="log"]');
+  showPage('log',logBtn);
+  const panel=document.getElementById('copilotPanel');
+  if(panel&&panel.classList.contains('show')){
+    setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),100);
+    return;
+  }
+  setTimeout(()=>{const box=document.getElementById('descBox');if(box){box.focus();box.scrollIntoView({behavior:'smooth',block:'center'});}},150);
+}
+
+function runCopilot(){
+  const desc=document.getElementById('descBox').value.trim();
+  if(!desc){alert('Please describe the issue before getting guidance.');return;}
+  if(!selectedUrgency){alert('Please select an urgency level.');return;}
+  if(!selectedCat){alert('Please select a category.');return;}
+  const btn=document.getElementById('copilotBtn');
+  btn.innerHTML='<span class="spinner"></span>Analysing...';
+  btn.disabled=true;
+  setTimeout(()=>{btn.innerHTML='Get Copilot guidance';btn.disabled=false;showCopilotResponse(desc);},1400);
+}
+
+function showCopilotResponse(desc){
+  const kb=COPILOT_KB[selectedCat]||COPILOT_KB['09'];
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'this category';
+  document.getElementById('copilotBadgeText').textContent='COPILOT ASSESSMENT — cross-checked against '+catName+' policy';
+  document.getElementById('policyText').textContent=kb.policy;
+  document.getElementById('policySource').textContent='Source: '+kb.source;
+  const ol=document.getElementById('stepsList');
+  ol.innerHTML='';
+  kb.steps.forEach(s=>{const li=document.createElement('li');li.textContent=s;ol.appendChild(li);});
+  const srcContainer=document.getElementById('copilotSources');
+  if(srcContainer) srcContainer.innerHTML=kb.sources?sourcesPanel(kb.sources):'';
+  copilotAssessedLevel=severityScore(desc,selectedCat);
+  const userLevel=selectedUrgency;
+  const disc=document.getElementById('discrepancyAlert');
+  if(copilotAssessedLevel&&LEVEL_ORDER[copilotAssessedLevel]>LEVEL_ORDER[userLevel]){
+    const diff=LEVEL_ORDER[copilotAssessedLevel]-LEVEL_ORDER[userLevel];
+    disc.className=diff>=2?'discrepancy-alert':'discrepancy-alert amber';
+    disc.style.display='block';
+    disc.innerHTML='<strong>Your rating and Copilot\'s assessment differ.</strong>Based on your description, Copilot assesses this as <strong>'+LEVEL_LABEL[copilotAssessedLevel]+'</strong>, which is higher than your rating of '+LEVEL_LABEL[userLevel]+'. The higher rating will govern where this is routed. Recommend updating your selection before submitting.';
+  } else {
+    disc.style.display='none'; copilotAssessedLevel=null;
+  }
+  const governingLevel=copilotAssessedLevel||userLevel;
+  const routing=ROUTING[selectedCat]||ROUTING['09'];
+  let ratingText='';
+  if(governingLevel==='critical') ratingText='This issue is rated <strong>Critical</strong>. Email and Teams alert to '+routing.tier4+' (ultimate escalation) and '+routing.tier3+' (CCO). For unresolved compliance, safeguarding or litigation issues, '+routing.tier4+' is the final authority.';
+  else if(governingLevel==='high') ratingText='This issue is rated <strong>High</strong>. Escalation routes first to '+routing.tier2+' (24–48 hour response target). If unresolved, escalates to '+routing.tier3+'.';
+  else if(governingLevel==='medium') ratingText='This issue is rated <strong>Medium</strong>. If you escalate, it routes to '+routing.tier2+' (3 working day response target). If unresolved, escalates to '+routing.tier3+'.';
+  else ratingText='This issue is rated <strong>Low</strong>. No escalation required — log it, take the first steps, and monitor.';
+  document.getElementById('copilotRatingText').innerHTML=ratingText;
+  const governingLabel=LEVEL_LABEL[governingLevel];
+  document.getElementById('escalateBtn').textContent='Escalate as '+governingLabel;
+  document.getElementById('escalateDesc').textContent=governingLevel==='critical'?
+    'Opens email and Teams message to '+routing.tier4+' and '+routing.tier3+' (CCO). Send when they open. Response target: 2 hours.':
+    'Routes to '+routing.tier2+'. If unresolved, escalates to '+routing.tier3+'.';
+  document.getElementById('copilotPanel').classList.add('show');
+  document.getElementById('copilotPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function markActioned(){
+  const desc=document.getElementById('descBox').value.trim();
+  const issue=buildIssue(desc,'actioned');
+  showLoading('Saving issue...');
+  try {
+    await writeIssue(issue);
+    await notifyOnSubmit(issue);
+    showConfirmation('actioned',issue);
+  } catch(e){
+    showToast('Save failed — please try again.');
+  } finally { hideLoading(); }
+}
+
+async function escalateIssue(){
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+  if(governingLevel==='critical'){ triggerCriticalEscalation(); return; }
+  const desc=document.getElementById('descBox').value.trim();
+  const issue=buildIssue(desc,'escalated');
+  showLoading('Escalating issue...');
+  try {
+    await writeIssue(issue);
+    await notifyOnSubmit(issue);
+    showConfirmation('escalated',issue);
+  } catch(e){
+    showToast('Save failed — please try again.');
+  } finally { hideLoading(); }
+}
+
+function buildIssue(desc, status){
+  const catTile=document.querySelector('.cat-tile.selected');
+  const catName=catTile?catTile.getAttribute('data-name'):'Other';
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+  const id='ISS-'+Date.now();
+  return {
+    id, nursery:SESSION?SESSION.nursery:'Unknown', zone:SESSION?SESSION.zone||'':'',
+    loggedBy:SESSION?SESSION.name||SESSION.nursery:'Unknown',
+    loggedByEmail:SESSION?SESSION.email||'':'',
+    cat:selectedCat, catName, desc,
+    userRating:selectedUrgency, copilotRating:copilotAssessedLevel,
+    governingRating:governingLevel, status,
+    createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(),
+    resolutionNote:''
+  };
+}
+
+async function saveDraft(){
+  const desc=document.getElementById('descBox').value.trim();
+  if(!desc){alert('Add a description before saving as draft.');return;}
+  if(!selectedCat){alert('Select a category before saving.');return;}
+  const issue=buildIssue(desc,'draft');
+  showLoading('Saving draft...');
+  try {
+    await writeIssue(issue);
+    showToast('Draft saved. Find it in My Issues.');
+  } catch(e){
+    showToast('Save failed — please try again.');
+  } finally { hideLoading(); }
+}
+
+async function notifyOnSubmit(issue){
+  const routing=ROUTING[issue.cat]||ROUTING['09'];
+  const level=issue.governingRating;
+  const recipients=[];
+  // Always notify the relevant area manager
+  const amEmail = issue.zone==='BlueWater' ? 'pav.bilkhu@completechildcare.co.uk' : 'Leanne.Maynard@completechildcare.co.uk';
+  if(level==='critical'||level==='high'){
+    recipients.push('alec.hodson@completechildcare.co.uk');
+    recipients.push('Emma.McIntyre@completechildcare.co.uk');
+    recipients.push('louise.medley@completechildcare.co.uk');
+    recipients.push(amEmail);
+  } else if(level==='medium'){
+    recipients.push(amEmail);
+    recipients.push('louise.medley@completechildcare.co.uk');
+  } else {
+    recipients.push(amEmail);
+  }
+  // Add compliance lead for relevant categories
+  if(['01','02','04','06'].includes(issue.cat)) recipients.push('Ellie.Richards@completechildcare.co.uk');
+  const unique=[...new Set(recipients)];
+  const subject=`[Issue Companion] ${LEVEL_LABEL[level]} issue logged — ${issue.catName} — ${issue.nursery} [${issue.id}]`;
+  const extra=`<strong>A new ${LEVEL_LABEL[level]} issue has been logged.</strong> Please review and respond in the Issue Companion.`;
+  await sendEmail(unique, subject, issueEmailBody(issue, extra));
+}
+
+function showConfirmation(type, issue){
+  document.querySelectorAll('#logCard label,#logCard .desc-box,#logCard .char-hint,#logCard .urgency-row,#logCard .btn-row,#logCard .copilot-panel').forEach(e=>e.style.display='none');
+  document.getElementById('logCardTitle').style.display='none';
+  document.getElementById('logCardSub').style.display='none';
+  const screen=document.getElementById('confirmScreen');
+  screen.style.display='block'; screen.classList.add('show');
+  const routing=ROUTING[selectedCat]||ROUTING['09'];
+  const governingLevel=copilotAssessedLevel||selectedUrgency;
+  if(type==='actioned'){
+    document.getElementById('confirmIcon').textContent='✓';
+    document.getElementById('confirmTitle').textContent='Issue logged and actioned';
+    document.getElementById('confirmMsg').textContent='Your interim steps have been noted. This issue is saved and visible to your management team. You can add a resolution note from My Issues at any time.';
+    document.getElementById('notifiedList').innerHTML='<li>Saved to the shared issue log</li><li>Your Area Manager has been notified by email</li>';
+  } else {
+    const label=LEVEL_LABEL[governingLevel];
+    document.getElementById('confirmIcon').textContent=governingLevel==='critical'?'🔴':'⬆';
+    document.getElementById('confirmTitle').textContent='Issue escalated as '+label;
+    const notified=[];
+    if(governingLevel==='critical'){
+      notified.push('<li>Alec Hodson — email notification sent</li>');
+      notified.push('<li>Emma McIntyre (CCO) — email notification sent</li>');
+      notified.push('<li>Louise Medley (EA) — email notification sent</li>');
+      notified.push('<li>Your Area Manager — email notification sent</li>');
+      document.getElementById('confirmMsg').textContent='A critical alert has been sent. Response target: within 2 hours.';
+    } else if(governingLevel==='high'){
+      notified.push('<li>'+routing.tier2+' — email notification sent</li>');
+      notified.push('<li>Louise Medley (EA to Group CEO) — copied</li>');
+      document.getElementById('confirmMsg').textContent='Your Area Manager and the relevant lead have been notified. Response target is 24–48 hours.';
+    } else {
+      notified.push('<li>'+routing.tier2+' — email notification sent</li>');
+      document.getElementById('confirmMsg').textContent='Your Area Manager has been notified. Response target is 3 working days.';
+    }
+    document.getElementById('notifiedList').innerHTML=notified.join('');
+  }
+  screen.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetForm(){
+  selectedCat=null; selectedUrgency=null; copilotAssessedLevel=null;
+  document.querySelectorAll('.cat-tile').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('.urgency-pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('descBox').value='';
+  document.getElementById('charHint').textContent='0 characters';
+  document.getElementById('copilotPanel').classList.remove('show');
+  document.getElementById('confirmScreen').classList.remove('show');
+  document.getElementById('confirmScreen').style.display='none';
+  document.getElementById('logCardTitle').textContent='Log an issue';
+  document.getElementById('logCardSub').textContent="Select a category above, then describe what's happening.";
+  document.querySelectorAll('#logCard label,#logCard .desc-box,#logCard .char-hint,#logCard .urgency-row,#logCard .btn-row').forEach(e=>e.style.display='');
+  document.getElementById('logCardTitle').style.display='';
+  document.getElementById('logCardSub').style.display='';
+  const sb=document.getElementById('searchBox'); if(sb) sb.value='';
+  const sr=document.getElementById('searchResults'); if(sr){sr.style.display='none';sr.innerHTML='';}
+  const main=document.getElementById('main'); if(main) main.scrollTop=0;
+  window.scrollTo(0,0);
+}
+
+/* ================================================================
+   MY ISSUES
+   ================================================================ */
+async function renderMyIssues(){
+  const el=document.getElementById('myIssuesContent');
+  if(!SESSION){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">Sign in to see your issues.</p>';return;}
+  el.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:var(--grey);margin-top:14px;">Loading issues...</p></div>';
+  try {
+    const issues = await getMyIssues();
+    if(!issues.length){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">No issues logged yet. Use the Log an issue page to get started.</p>';return;}
+    let html='<table class="log-table"><thead><tr><th>ID</th><th>Category</th><th>Severity</th><th>Status</th><th>Logged</th><th>Comments</th></tr></thead><tbody>';
+    issues.forEach(i=>{
+      const d=new Date(i.createdAt);
+      const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      html+=`<tr class="issue-row" onclick="openIssueDetail('${i.id}','myissues')">
+        <td style="font-family:var(--font-mono);font-size:11.5px;">${i.id.slice(-8)}</td>
+        <td>${i.catName}</td>
+        <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
+        <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
+        <td style="font-size:12.5px;">${ds}</td>
+        <td style="font-size:12px;color:var(--grey);">&#128172; View</td>
+      </tr>`;
+      if(i.desc){html+=`<tr><td colspan="6" style="padding:0 12px 12px;font-size:12.5px;color:var(--grey);">${i.desc.slice(0,180)}${i.desc.length>180?'…':''}</td></tr>`;}
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  } catch(e){
+    el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Could not load issues. Please check your connection.</p>';
+  }
+}
+
+/* ================================================================
+   ALL ISSUES (management)
+   ================================================================ */
+async function renderAllIssues(){
+  const el=document.getElementById('allIssuesContent');
+  if(!(SESSION&&SESSION.canViewDashboard)){
+    el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Access restricted.</p>';return;
+  }
+  el.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  try {
+    let issues=await getAllIssues();
+    const sev=document.getElementById('filterSeverity').value;
+    const stat=document.getElementById('filterStatus').value;
+    if(sev) issues=issues.filter(i=>i.governingRating===sev);
+    if(stat) issues=issues.filter(i=>i.status===stat);
+    if(!issues.length){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">No issues match the current filters.</p>';return;}
+    let html='<table class="log-table"><thead><tr><th>ID</th><th>Setting</th><th>Category</th><th>Severity</th><th>Status</th><th>Logged</th></tr></thead><tbody>';
+    issues.forEach(i=>{
+      const d=new Date(i.createdAt);
+      const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+      html+=`<tr class="issue-row" onclick="openIssueDetail('${i.id}','allissues')">
+        <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
+        <td style="font-size:12.5px;">${i.nursery}</td>
+        <td style="font-size:12.5px;">${i.catName}</td>
+        <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
+        <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
+        <td style="font-size:12px;">${ds}</td>
+      </tr>`;
+      if(i.desc){html+=`<tr><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  } catch(e){
+    el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Could not load issues.</p>';
+  }
+}
+
+/* ================================================================
+   DASHBOARD
+   ================================================================ */
+async function renderDashboard(){
+  if(!(SESSION&&SESSION.canViewDashboard)){
+    const el=document.getElementById('kpiGrid');
+    if(el) el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Access restricted.</p>';
+    return;
+  }
+  showLoading('Loading dashboard...');
+  try {
+    const issues=await getAllIssues();
+    const open=issues.filter(i=>i.status!=='closed'&&i.status!=='draft');
+    const escalated=issues.filter(i=>i.status==='escalated');
+    const critical=issues.filter(i=>i.governingRating==='critical'&&i.status!=='closed');
+    const mismatches=issues.filter(i=>i.copilotRating&&i.copilotRating!==i.userRating);
+    const kpiGrid=document.getElementById('kpiGrid');
+    if(kpiGrid) kpiGrid.innerHTML=`
+      <div class="kpi-card"><div class="num">${issues.length}</div><div class="lbl">Total logged</div></div>
+      <div class="kpi-card"><div class="num">${open.length}</div><div class="lbl">Open issues</div></div>
+      <div class="kpi-card"><div class="num">${escalated.length}</div><div class="lbl">Escalated</div></div>
+      <div class="kpi-card"><div class="num">${mismatches.length}</div><div class="lbl">Rating mismatches</div></div>`;
+    const byCat={};
+    issues.forEach(i=>{byCat[i.catName]=(byCat[i.catName]||0)+1;});
+    const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    const max=sorted.length?sorted[0][1]:1;
+    const barEl=document.getElementById('barChart');
+    if(barEl){
+      if(!sorted.length){barEl.innerHTML='<p style="font-size:13px;color:var(--grey);">No issues logged yet.</p>';}
+      else barEl.innerHTML=sorted.map(([cat,n])=>`
+        <div class="bar-row">
+          <span class="lbl">${cat.length>22?cat.slice(0,22)+'…':cat}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%"></div></div>
+          <span class="val">${n}</span>
+        </div>`).join('');
+    }
+    const critEl=document.getElementById('criticalList');
+    if(critEl){
+      const highAndCrit=issues.filter(i=>(i.governingRating==='critical'||i.governingRating==='high')&&i.status!=='closed');
+      if(!highAndCrit.length) critEl.innerHTML='<p style="font-size:13px;color:var(--grey);">No open critical or high issues.</p>';
+      else critEl.innerHTML=highAndCrit.map(i=>`
+        <div style="padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;" onclick="openIssueDetail('${i.id}','dashboard')">
+          <span class="badge badge-${i.governingRating}" style="margin-right:8px;">${LEVEL_LABEL[i.governingRating]}</span>
+          <strong>${i.catName}</strong> — ${i.nursery}
+          <span style="color:var(--grey);margin-left:10px;font-size:12px;">${new Date(i.createdAt).toLocaleDateString('en-GB')}</span>
+          <div style="color:var(--grey);margin-top:4px;font-size:12.5px;">${i.desc?i.desc.slice(0,120)+'…':''}</div>
+        </div>`).join('');
+    }
+  } catch(e){
+    const el=document.getElementById('kpiGrid');
+    if(el) el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Could not load dashboard.</p>';
+  } finally { hideLoading(); }
+}
+
+/* ================================================================
+   ISSUE DETAIL + THREAD
+   ================================================================ */
+async function openIssueDetail(issueId, fromPage){
+  previousPage = fromPage || 'myissues';
+  currentDetailIssueId = issueId;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navlist button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-issuedetail').classList.add('active');
+  const detailContent = document.getElementById('detailContent');
+  detailContent.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+  showLoading('Loading issue...');
+  try {
+    const [issue, comments] = await Promise.all([
+      getIssueById(issueId),
+      getCommentsForIssue(issueId)
+    ]);
+    if(!issue){ detailContent.innerHTML='<p style="color:var(--red);">Issue not found.</p>'; return; }
+    document.getElementById('detailEyebrow').textContent = issue.catName + ' — ' + issue.nursery;
+    document.getElementById('detailTitle').textContent = issue.id.slice(-8);
+    renderDetailView(issue, comments);
+  } catch(e){
+    detailContent.innerHTML='<p style="color:var(--red);">Could not load issue.</p>';
+  } finally { hideLoading(); }
+}
+
+function renderDetailView(issue, comments){
+  const isManager = SESSION && SESSION.canViewDashboard;
+  const canChangeStatus = isManager;
+  const statusOptions = ['actioned','escalated','in-progress','resolved','closed'];
+  const statusSelect = canChangeStatus ? `
+    <div class="status-row">
+      <label>Status:</label>
+      <select id="statusSelect" onchange="changeIssueStatus('${issue.id}',this.value)">
+        ${statusOptions.map(s=>`<option value="${s}" ${issue.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:var(--grey);margin-left:4px;">(changes save automatically)</span>
+    </div>` : `<div class="status-row"><label>Status:</label> <span class="badge badge-${issue.status}">${issue.status.charAt(0).toUpperCase()+issue.status.slice(1)}</span></div>`;
+
+  const commentsHtml = comments.length ? comments.map(c=>{
+    const isMgmt = c.fromManagement;
+    const cls = isMgmt ? 'from-mgmt' : 'from-nursery';
+    const d = new Date(c.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="comment-item ${cls}">
+      <div class="comment-author">${c.authorName} <span class="comment-time">${d}</span></div>
+      <div class="comment-text">${(c.text||'').replace(/</g,'&lt;').replace(/\n/g,'<br/>')}</div>
+    </div>`;
+  }).join('') : '<p style="font-size:13px;color:var(--grey);margin:0 0 16px;">No responses yet.</p>';
+
+  const d = new Date(issue.createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="thread-header">
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+          <span class="badge badge-${issue.governingRating}">${LEVEL_LABEL[issue.governingRating]||issue.governingRating}</span>
+          <span class="badge badge-${issue.status}">${issue.status.charAt(0).toUpperCase()+issue.status.slice(1)}</span>
+        </div>
+        <div class="thread-meta">
+          <span><strong>Logged by:</strong> ${issue.loggedBy}</span>
+          <span><strong>Date:</strong> ${d}</span>
+          <span><strong>Zone:</strong> ${issue.zone||'—'}</span>
+        </div>
+      </div>
+    </div>
+    ${statusSelect}
+    <h4 style="margin:0 0 10px;font-size:14px;color:var(--grey);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;">Original description</h4>
+    <div class="thread-body">${(issue.desc||'').replace(/</g,'&lt;').replace(/\n/g,'<br/>')}</div>
+    <h4 style="margin:0 0 14px;font-size:14px;color:var(--grey);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;">Responses (${comments.length})</h4>
+    <div class="comment-list" id="commentList">${commentsHtml}</div>
+    <div class="reply-box">
+      <label class="field-label" style="margin-bottom:8px;">Add a response</label>
+      <textarea id="replyText" placeholder="${isManager ? 'Add your suggestion, guidance or update for the nursery manager...' : 'Add an update or response to the management team...'}" style="width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--font-body);font-size:13.5px;resize:vertical;"></textarea>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn-primary" onclick="postReply('${issue.id}')">Send response</button>
+        <button class="btn-ghost" onclick="goBack()">Back</button>
+      </div>
+    </div>`;
+}
+
+async function changeIssueStatus(issueId, newStatus){
+  showLoading('Updating status...');
+  try {
+    const issue = await getIssueById(issueId);
+    if(!issue) return;
+    const oldStatus = issue.status;
+    issue.status = newStatus;
+    issue.updatedAt = new Date().toISOString();
+    await writeIssue(issue);
+    // Notify the nursery manager of the status change
+    if(issue.loggedByEmail){
+      const subject = `[Issue Companion] Issue ${issue.id.slice(-8)} status updated to ${newStatus.charAt(0).toUpperCase()+newStatus.slice(1)}`;
+      const extra = `<strong>${SESSION.name||SESSION.nursery}</strong> has updated the status of your issue from <strong>${oldStatus}</strong> to <strong>${newStatus.charAt(0).toUpperCase()+newStatus.slice(1)}</strong>.`;
+      await sendEmail(issue.loggedByEmail, subject, issueEmailBody(issue, extra));
+    }
+    showToast('Status updated to ' + newStatus);
+  } catch(e){
+    showToast('Failed to update status.');
+  } finally { hideLoading(); }
+}
+
+async function postReply(issueId){
+  const text = document.getElementById('replyText').value.trim();
+  if(!text){ alert('Please enter a response before sending.'); return; }
+  const isManager = SESSION && SESSION.canViewDashboard;
+  showLoading('Sending response...');
+  try {
+    const comment = {
+      id: 'CMT-' + Date.now(),
+      issueId,
+      authorName: SESSION ? SESSION.name||SESSION.nursery : 'Unknown',
+      authorEmail: SESSION ? SESSION.email||'' : '',
+      fromManagement: isManager,
+      text,
+      createdAt: new Date().toISOString()
+    };
+    await writeComment(comment);
+    // Send email notification
+    const issue = await getIssueById(issueId);
+    if(issue){
+      let notifyEmail = '';
+      if(isManager){
+        // Manager replied — notify the nursery manager who submitted
+        notifyEmail = issue.loggedByEmail;
+      } else {
+        // Nursery manager replied — notify the relevant AM + compliance
+        const amEmail = issue.zone==='BlueWater' ? 'pav.bilkhu@completechildcare.co.uk' : 'Leanne.Maynard@completechildcare.co.uk';
+        notifyEmail = amEmail;
+      }
+      if(notifyEmail){
+        const subject = `[Issue Companion] New response on issue ${issue.id.slice(-8)} — ${issue.catName} — ${issue.nursery}`;
+        const extra = `<strong>${comment.authorName}</strong> has added a response:<br/><br/><em>${text.replace(/\n/g,'<br/>')}</em>`;
+        await sendEmail(notifyEmail, subject, issueEmailBody(issue, extra));
+      }
+    }
+    showToast('Response sent.');
+    // Reload the detail view
+    await openIssueDetail(issueId, previousPage);
+  } catch(e){
+    showToast('Failed to send response. Please try again.');
+  } finally { hideLoading(); }
+}
+
+/* ================================================================
+   RESOLVE MODAL (kept for backwards compat)
+   ================================================================ */
+function openResolveModal(id){
+  resolveTargetId=id;
+  document.getElementById('resolveNote').value='';
+  document.getElementById('resolveModal').classList.add('active');
+}
+async function confirmResolve(){
+  const note=document.getElementById('resolveNote').value.trim();
+  if(!note){alert('Please add a resolution note before closing.');return;}
+  showLoading('Closing issue...');
+  try {
+    const issue = await getIssueById(resolveTargetId);
+    if(issue){
+      issue.status='closed'; issue.resolutionNote=note; issue.updatedAt=new Date().toISOString();
+      await writeIssue(issue);
+    }
+    document.getElementById('resolveModal').classList.remove('active');
+    renderMyIssues(); renderDashboard();
+    showToast('Issue closed.');
+  } catch(e){ showToast('Failed to close issue.'); }
+  finally { hideLoading(); }
+}
+
+/* ================================================================
+   CRITICAL ESCALATION
+   ================================================================ */
+function triggerCriticalEscalation(){
+  document.getElementById('criticalNote').value='';
+  document.getElementById('criticalModal').classList.add('active');
+}
+function closeCriticalModal(){ document.getElementById('criticalModal').classList.remove('active'); }
+
+async function confirmCriticalEscalation(){
+  const note=document.getElementById('criticalNote').value.trim();
+  if(!note){alert('Please describe the immediate risk before sending the alert.');return;}
+  const desc=document.getElementById('descBox').value.trim()||note;
+  const issue = selectedCat ? buildIssue(desc+'\n\nCritical note: '+note,'escalated') : {
+    id:'ISS-'+Date.now(), nursery:SESSION?SESSION.nursery:'Unknown', zone:SESSION?SESSION.zone||'':'',
+    loggedBy:SESSION?SESSION.name||SESSION.nursery:'Unknown', loggedByEmail:SESSION?SESSION.email||'':'',
+    cat:'01', catName:'Critical Escalation', desc:desc+'\n\nCritical note: '+note,
+    userRating:'critical', copilotRating:'critical', governingRating:'critical', status:'escalated',
+    createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), resolutionNote:''
+  };
+  showLoading('Sending critical alert...');
+  try {
+    if(selectedCat) await writeIssue(issue);
+    closeCriticalModal();
+    const nursery=SESSION?SESSION.nursery:'your setting';
+    const ref=issue.id;
+    const catTile=document.querySelector('.cat-tile.selected');
+    const catName=catTile?catTile.getAttribute('data-name'):'Unspecified';
+    const subject='CRITICAL ISSUE ALERT — '+nursery+' — '+catName+' ['+ref.slice(-6)+']';
+    const extra='<strong style="color:#B71C1C;">CRITICAL ALERT</strong><br/>'+note+'<br/><br/>Response required within 2 hours.';
+    await sendEmail(
+      ['alec.hodson@completechildcare.co.uk','Emma.McIntyre@completechildcare.co.uk','louise.medley@completechildcare.co.uk'],
+      subject, issueEmailBody(issue, extra)
+    );
+    // Also open Teams links as backup
+    const teamsMsg=encodeURIComponent('🔴 CRITICAL ISSUE ALERT — '+nursery+'\nCategory: '+catName+' | Ref: '+ref.slice(-6)+'\nNote: '+note+'\nResponse required within 2 hours.');
+    setTimeout(()=>window.open('https://teams.microsoft.com/l/chat/0/0?users=alec.hodson@completechildcare.co.uk&message='+teamsMsg,'_blank'),400);
+    setTimeout(()=>window.open('https://teams.microsoft.com/l/chat/0/0?users=Emma.McIntyre@completechildcare.co.uk&message='+teamsMsg,'_blank'),1200);
+    document.getElementById('confirmIcon').textContent='🔴';
+    document.getElementById('confirmTitle').textContent='Critical alert sent';
+    document.getElementById('confirmMsg').textContent='Email alerts sent to Alec Hodson, Emma McIntyre and Louise Medley. Teams messages opened as backup. Reference: '+ref.slice(-6);
+    document.getElementById('notifiedList').innerHTML='<li>Alec Hodson — email sent</li><li>Emma McIntyre (CCO) — email sent</li><li>Louise Medley (EA) — email sent</li><li>Teams messages opened</li><li>Issue logged to shared record</li>';
+    const screen=document.getElementById('confirmScreen');
+    screen.style.display='block'; screen.classList.add('show');
+    screen.scrollIntoView({behavior:'smooth',block:'start'});
+  } catch(e){ showToast('Alert sending failed. Please call Alec Hodson directly.'); }
+  finally { hideLoading(); }
+}
+
+
 function scoreSearch(v, entry){
   // Score = number of keywords matched, weighted by position in query
   const words = v.split(/\s+/).filter(w=>w.length>2);
@@ -1500,47 +2686,70 @@ function applySearchHint(catId){
    ================================================================ */
 populateIdentitySelect();
 
-// ── Identity resolution: Teams SDK → URL param → stored session → manual picker
-(function(){
-  function matchUserByEmail(upn){
-    if(!upn) return null;
-    const u=upn.toLowerCase();
-    for(let i=0;i<MGMT_LIST.length;i++){if((MGMT_LIST[i].email||'').toLowerCase()===u) return JSON.parse(JSON.stringify(MGMT_LIST[i]));}
-    for(let i=0;i<NURSERY_LIST.length;i++){if((NURSERY_LIST[i].email||'').toLowerCase()===u) return JSON.parse(JSON.stringify(NURSERY_LIST[i]));}
-    return null;
-  }
-  function signInAs(user){
-    SESSION=user; storeSession(SESSION);
-    document.getElementById('identityModal').classList.remove('active');
-    applySession();
-  }
-  function fallback(){
-    // Try URL param ?as=name
-    const params=new URLSearchParams(window.location.search);
-    const asParam=(params.get('as')||'').toLowerCase().trim();
-    if(asParam){
-      let matched=null;
-      MGMT_LIST.forEach((u,i)=>{if(u.name.toLowerCase().includes(asParam)) matched={type:'m',idx:i};});
-      if(!matched) NURSERY_LIST.forEach((u,i)=>{if(u.nursery.toLowerCase().includes(asParam)) matched={type:'n',idx:i};});
-      if(matched){ signInAs(matched.type==='m'?MGMT_LIST[matched.idx]:NURSERY_LIST[matched.idx]); return; }
-    }
-    // Try stored session
-    const stored=getStoredSession();
-    if(stored){ signInAs(stored); return; }
-    // Show picker
-    document.getElementById('identityModal').classList.add('active');
-  }
-  // Try Teams SDK first
+(async function(){
+  // 1. Try Teams SDK first
   if(typeof microsoftTeams !== 'undefined'){
-    microsoftTeams.app.initialize().then(()=>{
-      microsoftTeams.app.getContext().then(ctx=>{
-        const upn=ctx&&ctx.user&&ctx.user.loginHint;
-        const matched=matchUserByEmail(upn);
-        if(matched){ signInAs(matched); } else { fallback(); }
-      }).catch(()=>{ fallback(); });
-    }).catch(()=>{ fallback(); });
-  } else { fallback(); }
+    try {
+      await microsoftTeams.app.initialize();
+      const ctx = await microsoftTeams.app.getContext();
+      const upn = ctx && ctx.user && ctx.user.loginHint;
+      if(upn){
+        // Try to get a token via Teams SSO
+        try {
+          const tokenResp = await microsoftTeams.authentication.getAuthToken();
+          // Exchange Teams token for Graph token via OBO flow isn't possible client-side
+          // Fall back to MSAL with hint
+          await initMSAL();
+          const accounts = msalInstance.getAllAccounts();
+          let matched = matchUserByEmail(upn);
+          if(accounts.length){
+            // Already have a cached token
+            const user = matchUserByEmail(upn);
+            if(user){ SESSION=user; storeSession(SESSION); applySession(); return; }
+          }
+          // Try silent MSAL with login hint
+          try {
+            const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: upn });
+            graphToken = resp.accessToken;
+            tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+            await resolveIdentityFromGraph();
+            return;
+          } catch(e2) {}
+          // Fall through to stored session or picker
+        } catch(e) {}
+        // Try matching by UPN directly
+        const user = matchUserByEmail(upn);
+        if(user){ SESSION=user; storeSession(SESSION); applySession(); return; }
+      }
+    } catch(e) {}
+  }
+
+  // 2. Try MSAL silent (cached token)
+  await initMSAL();
+  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(accounts.length){
+    try {
+      const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+      graphToken = resp.accessToken;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      await resolveIdentityFromGraph();
+      return;
+    } catch(e) {}
+  }
+
+  // 3. Try stored session (fallback — no Graph token, limited to read-only local state)
+  const stored = getStoredSession();
+  if(stored){ SESSION=stored; applySession(); 
+    // Show auth overlay to get a proper Graph token
+    document.getElementById('authOverlay').style.display='flex';
+    return; 
+  }
+
+  // 4. Show identity modal + auth overlay
+  document.getElementById('identityModal').classList.add('active');
+  document.getElementById('authOverlay').style.display='flex';
 })();
 </script>
+
 </body>
 </html>
