@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1025,14 +1025,18 @@ function applySearchHint(catId){
    MSAL AUTH + GRAPH HELPERS
    ================================================================ */
 // Initialise MSAL synchronously so it is always available
-var msalInstance = (function(){
+var msalInstance = null;
+(function tryInitMSAL(){
+  if(typeof msal === 'undefined' || !msal.PublicClientApplication){
+    // Library not loaded yet - retry in 100ms
+    setTimeout(tryInitMSAL, 100);
+    return;
+  }
   try {
-    var inst = new msal.PublicClientApplication(MSAL_CONFIG);
-    inst.initialize(); // fire and forget - resolves quickly
-    return inst;
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    msalInstance.initialize();
   } catch(e) {
     console.error('MSAL init failed:', e);
-    return null;
   }
 })();
 var graphToken = null;
