@@ -190,10 +190,34 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 .bar-row .val{width:32px;text-align:right;font-size:12px;color:var(--grey);font-family:var(--font-mono);}
 
 /* ===== SEARCH BAR ===== */
-.search-wrap{position:relative;margin-bottom:24px;}
+.search-wrap{position:relative;margin-bottom:16px;}
 .search-wrap input{width:100%;padding:12px 16px 12px 42px;border:1.5px solid var(--line);border-radius:10px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--white);}
 .search-wrap input:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
 .search-wrap .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--grey);}
+.sr-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.sr-card:hover{border-color:var(--purple-mid);box-shadow:0 4px 14px -6px rgba(58,31,106,.2);}
+.sr-card.sr-best{border-color:var(--amber-bright);background:linear-gradient(135deg,#fffbf0 0%,var(--white) 100%);}
+.sr-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.sr-cat-badge{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;background:var(--purple-deep);color:#fff;white-space:nowrap;flex-shrink:0;}
+.sr-cat-badge.badge-01{background:#7B3F9E;}
+.sr-cat-badge.badge-02{background:#C0392B;}
+.sr-cat-badge.badge-03{background:#E67E22;}
+.sr-cat-badge.badge-04{background:#2E86C1;}
+.sr-cat-badge.badge-05{background:#1E8449;}
+.sr-cat-badge.badge-06{background:#7D6608;}
+.sr-cat-badge.badge-07{background:#922B21;}
+.sr-cat-badge.badge-08{background:#6C3483;}
+.sr-cat-badge.badge-09{background:#555;}
+.sr-title{font-weight:700;font-size:14px;color:var(--ink);flex:1;}
+.sr-tip{font-size:13px;color:#444;line-height:1.55;margin-bottom:8px;}
+.sr-step{font-size:12px;color:var(--purple-deep);background:var(--purple-tint);border-radius:6px;padding:6px 10px;line-height:1.45;}
+.sr-step strong{font-weight:700;}
+.sr-action{font-size:11.5px;font-weight:700;color:var(--purple-mid);margin-top:8px;display:flex;align-items:center;gap:4px;}
+.sr-no-match{background:var(--white);border:1.5px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:10px;}
+.sr-no-match p{margin:0 0 10px;font-size:13.5px;color:var(--grey);}
+.sr-cats{display:flex;flex-wrap:wrap;gap:7px;}
+.sr-cat-pill{font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);cursor:pointer;transition:all .12s;color:var(--ink);}
+.sr-cat-pill:hover{border-color:var(--purple-mid);background:var(--purple-tint);color:var(--purple-deep);}
 
 /* ===== CRITICAL PANIC BUTTON ===== */
 .panic-btn{position:fixed;right:24px;bottom:24px;background:var(--red);color:#fff;border:none;border-radius:30px;padding:14px 20px;font-family:var(--font-body);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px -8px rgba(183,28,28,.55);display:flex;align-items:center;gap:9px;z-index:100;}
@@ -1340,37 +1364,109 @@ function confirmCriticalEscalation(){
 /* ================================================================
    SEARCH (quick guidance)
    ================================================================ */
-const SEARCH_HINTS = [
-  {q:"fire door",cat:"02",tip:"A fire door that isn't self-closing is a life-safety control failure. Rate as Critical and escalate immediately."},
-  {q:"expired dbs",cat:"06",tip:"Staff with an expired DBS must be supervised at all times. Contact HR today to initiate renewal."},
-  {q:"dbs expired",cat:"06",tip:"Staff with an expired DBS must be supervised at all times. Contact HR today to initiate renewal."},
-  {q:"ratio breach",cat:"03",tip:"A ratio breach is a regulatory non-compliance. Contact your Area Manager immediately and document the breach."},
-  {q:"below ratio",cat:"03",tip:"A ratio breach is a regulatory non-compliance. Contact your Area Manager immediately."},
-  {q:"child missing",cat:"01",tip:"A missing child is a Critical safeguarding emergency. Call 999 immediately, then notify Alec Hodson and Ellie Richards."},
-  {q:"data breach",cat:"07",tip:"Notify Alec Hodson (DPO) immediately. The ICO may need to be informed within 72 hours."},
-  {q:"lost device",cat:"07",tip:"Report to IT immediately for remote wipe. Notify Alec Hodson (DPO) the same day."},
-  {q:"gas leak",cat:"02",tip:"Evacuate immediately. Call 999 and the National Gas Emergency Service (0800 111 999). Do not re-enter until cleared."},
-  {q:"misdirected email",cat:"07",tip:"Do not contact the unintended recipient yourself. Notify Alec Hodson (DPO) immediately."},
-  {q:"RIDDOR",cat:"02",tip:"RIDDOR-reportable incidents must be reported to the HSE. Notify Alec Hodson immediately to confirm whether reporting is required."},
-  {q:"near miss",cat:"02",tip:"All near misses must be logged in the accident/incident record on the day. Photograph the hazard before making it safe."},
-  {q:"LADO",cat:"01",tip:"Any allegation against a member of staff must be referred to the LADO immediately. Do not investigate internally first."},
-  {q:"allegation",cat:"01",tip:"Any allegation against a member of staff must be referred to the LADO immediately. Contact Ellie Richards and Alec Hodson now."},
-  {q:"ofsted complaint",cat:"08",tip:"Log the complaint, acknowledge in writing within 2 working days, and notify Emma McIntyre (CCO) immediately."},
-  {q:"damp",cat:"05",tip:"Log in the premises record and arrange an inspection. If mould is visible in a child area, close the area until remediated."},
-  {q:"mould",cat:"05",tip:"Close any child-accessible area with visible mould immediately. Log and arrange urgent remediation."},
+// ── SEARCH KNOWLEDGE BASE ────────────────────────────────────────────────────
+// Each entry: keywords[] (any word triggers a match), cat, title, tip, step
+const SEARCH_KB = [
+  // ── 01 SAFEGUARDING ───────────────────────────────────────────────────────
+  {keywords:['safeguard','safeguarding','child','missing','intruder','visitor','access','gate','perimeter','lock','locked','security','lado','allegation','abuse','disclosure','concern','protect','dsl','designated'],
+   cat:'01',title:'Safeguarding — operational',
+   tip:'Any safeguarding concern must go to your Designated Safeguarding Lead (DSL) immediately. Do not investigate yourself.',
+   step:'Secure the area. Contact your DSL now. Do not speak to the subject of any allegation before the LADO is informed.'},
+  // ── 02 HEALTH & SAFETY ────────────────────────────────────────────────────
+  {keywords:['fire','alarm','door','evacuation','accident','injury','injured','hurt','hospital','ambulance','riddor','near miss','hazard','risk','slip','trip','fall','food','allergy','anaphylaxis','medication','epipen','gas','leak','flood','water','electrical','boiler','heating','pest','vermin','rat','mouse','first aid','first aider','burn','scald','choking','head','blood'],
+   cat:'02',title:'Health & safety',
+   tip:'All accidents, near misses and hazards must be recorded in the accident/incident log on the day they occur.',
+   step:'Ensure the immediate area is safe and any injured person receives first aid. Photograph any hazard before making it safe.'},
+  // ── 03 RATIOS & COVER ─────────────────────────────────────────────────────
+  {keywords:['ratio','ratios','cover','staff','staffing','short','short-staffed','understaffed','room','qualified','level 3','level3','1:3','1:4','1:5','1:8','agency','bank','absent','off sick','no cover','uncovered','children','supervision','unsupervised'],
+   cat:'03',title:'Ratios & cover',
+   tip:'Minimum staffing ratios must be maintained at all times. A breach is a regulatory non-compliance and must be corrected immediately.',
+   step:'Identify affected rooms. Move available qualified staff immediately. Contact your Area Manager now — do not wait.'},
+  // ── 04 STANDARDS & QUALITY ────────────────────────────────────────────────
+  {keywords:['standard','quality','eyfs','practice','observation','observed','ofsted','inspection','learning','development','curriculum','behaviour','conduct','practitioner','poor practice','concern','non-compliance','self-evaluation','improvement','cpd','training','supervision'],
+   cat:'04',title:'Standards & quality',
+   tip:'Observed practice that falls below the expected standard must be addressed promptly through coaching and supervision.',
+   step:'Document the specific concern with dates, times and what was observed. Speak to the staff member supportively and note the conversation.'},
+  // ── 05 PREMISES & MAINTENANCE ─────────────────────────────────────────────
+  {keywords:['premises','maintenance','building','repair','broken','damage','damaged','defect','leak','roof','ceiling','wall','window','door','lock','playground','equipment','fence','gate','contractor','boiler','heating','hot water','cold water','damp','mould','mold','pest','structural','electrical','wiring','plumbing','toilet','bathroom','kitchen'],
+   cat:'05',title:'Premises & maintenance',
+   tip:'All premises defects must be reported to the maintenance log on the day they are identified.',
+   step:'Log the defect with a photograph. Assess immediate risk — if unsafe, close the affected area. Contact your Area Manager if it cannot be made safe today.'},
+  // ── 06 COMPLIANCE DOCUMENTATION ───────────────────────────────────────────
+  {keywords:['dbs','disclosure','barring','check','certificate','expired','expiry','lapsed','overdue','renewal','qualification','level 2','level 3','paediatric','first aid','pfa','safeguarding training','right to work','document','compliance','register','record','missing','incomplete','induction'],
+   cat:'06',title:'Compliance documentation',
+   tip:'Staff with an expired DBS or lapsed certification must not work unsupervised with children until renewed.',
+   step:'Identify the staff member and lapsed certification. Arrange supervised-only working immediately. Contact Ellie Richards (Compliance) today to initiate renewal.'},
+  // ── 07 DATA PROTECTION ────────────────────────────────────────────────────
+  {keywords:['data','gdpr','personal','information','email','sent wrong','misdirected','lost','device','phone','laptop','tablet','usb','breach','access','unauthorised','shared','file','document','record','ico','dpo','privacy','confidential','confidentiality'],
+   cat:'07',title:'Data protection incident',
+   tip:'Any personal data incident must be reported to the DPO (Alec Hodson) within 24 hours. The ICO may need to be informed within 72 hours.',
+   step:'Stop any ongoing breach immediately. Do not contact the unintended recipient. Notify Alec Hodson (DPO) now — do not wait until end of day.'},
+  // ── 08 COMPLAINT — COMPLIANCE ─────────────────────────────────────────────
+  {keywords:['complaint','complain','parent','family','unhappy','upset','formal','written','ofsted','regulatory','welfare','safeguarding complaint','legal','solicitor','media','press','social media','allegation','compensation','liability'],
+   cat:'08',title:'Complaint — compliance',
+   tip:'All complaints with a compliance dimension must be logged in the complaints register on the day they are received.',
+   step:'Log the complaint with full details. Acknowledge receipt in writing within 2 working days. Notify your Area Manager and Emma McIntyre (CCO) if it is serious or complex.'},
+  // ── 09 OTHER ──────────────────────────────────────────────────────────────
+  {keywords:['other','general','unsure','not sure','help','urgent','serious','significant','issue','problem','concern','incident'],
+   cat:'09',title:'Other',
+   tip:'If your issue does not fit any category, log it here and your Area Manager will review and route it correctly.',
+   step:'Describe the issue in as much detail as possible. Note any immediate risks or actions already taken.'},
 ];
 
+const CAT_NAMES = {
+  '01':'Safeguarding — operational','02':'Health & safety','03':'Ratios & cover',
+  '04':'Standards & quality','05':'Premises & maintenance','06':'Compliance documentation',
+  '07':'Data protection incident','08':'Complaint — compliance','09':'Other'
+};
+
+function scoreSearch(v, entry){
+  // Score = number of keywords matched, weighted by position in query
+  const words = v.split(/\s+/).filter(w=>w.length>2);
+  let score = 0;
+  for(const kw of entry.keywords){
+    if(v.includes(kw)) score += 3;           // full phrase match
+    else for(const w of words){
+      if(kw.includes(w) || w.includes(kw.split(' ')[0])) score += 1; // word match
+    }
+  }
+  return score;
+}
+
 function handleSearch(val){
-  const v=val.trim().toLowerCase();
-  const el=document.getElementById('searchResults');
-  if(!v){el.style.display='none';return;}
-  const matches=SEARCH_HINTS.filter(h=>h.q.includes(v)||v.includes(h.q));
-  if(!matches.length){el.style.display='none';return;}
-  el.style.display='block';
-  el.innerHTML=matches.map(m=>`
-    <div class="notice" style="cursor:pointer;margin-bottom:8px;" onclick="applySearchHint('${m.cat}')">
-      <strong>Quick guidance: ${m.q}</strong><br>${m.tip}
-      <div style="margin-top:6px;font-size:12px;color:var(--purple-mid);">Click to pre-select category ${m.cat} &#8594;</div>
+  const v = val.trim().toLowerCase();
+  const el = document.getElementById('searchResults');
+  if(v.length < 2){ el.style.display='none'; return; }
+
+  // Score every KB entry
+  const scored = SEARCH_KB.map(e=>({...e, score:scoreSearch(v,e)}))
+                           .filter(e=>e.score>0)
+                           .sort((a,b)=>b.score-a.score);
+
+  el.style.display = 'block';
+
+  if(scored.length === 0){
+    // No match — show all categories as pills so user can still pick quickly
+    el.innerHTML = `<div class="sr-no-match">
+      <p>No exact match found for <strong>"${val.trim()}"</strong> — select the most relevant category below, or describe your issue in more detail.</p>
+      <div class="sr-cats">${SEARCH_KB.slice(0,8).map(e=>`
+        <div class="sr-cat-pill" onclick="applySearchHint('${e.cat}')">${e.title}</div>`).join('')}
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Show top 3 matches as rich cards
+  const top = scored.slice(0,3);
+  el.innerHTML = top.map((m,i)=>`
+    <div class="sr-card${i===0?' sr-best':''}" onclick="applySearchHint('${m.cat}')">
+      <div class="sr-header">
+        <span class="sr-cat-badge badge-0${m.cat.slice(-1)}">${m.cat} — ${CAT_NAMES[m.cat]}</span>
+        ${i===0?'<span style="font-size:11px;font-weight:700;color:var(--amber);margin-left:auto;">Best match</span>':''}
+      </div>
+      <div class="sr-tip">${m.tip}</div>
+      <div class="sr-step"><strong>First step:</strong> ${m.step}</div>
+      <div class="sr-action">Tap to select this category &#8594;</div>
     </div>`).join('');
 }
 
