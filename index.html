@@ -684,7 +684,8 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <div style="margin-bottom:18px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
     <h2>Sign in required</h2>
     <p>Sign in with your Complete Childcare Microsoft 365 account to use the Issue Companion.</p>
-    <button class="auth-btn" onclick="msalSignIn()">Sign in with Microsoft</button>
+    <button class="auth-btn" onclick="msalSignIn()">Connect to Microsoft 365</button>
+    <p style="font-size:11.5px;color:#aaa;margin-top:12px;">Required to load and save issues from your organisation's SharePoint.</p>
     <div id="authError" style="display:none;margin-top:14px;font-size:12.5px;color:var(--red);"></div>
   </div>
 </div>
@@ -1757,11 +1758,19 @@ async function graphFetch(method, path, body){
 async function msalSignIn(){
   document.getElementById('authError').style.display = 'none';
   try {
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
+    // Try silent first (works if already signed into M365 in this browser)
+    let resp;
+    const loginHint = SESSION ? SESSION.email : '';
+    try {
+      resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
+    } catch(e){
+      // Silent failed — use popup
+      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    }
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
     document.getElementById('authOverlay').style.display = 'none';
-    await resolveIdentityFromGraph();
+    if(!SESSION) await resolveIdentityFromGraph();
   } catch(e) {
     const err = document.getElementById('authError');
     err.textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
@@ -2687,45 +2696,37 @@ function applySearchHint(catId){
 populateIdentitySelect();
 
 (async function(){
-  // 1. Try Teams SDK first
+  await initMSAL();
+
+  // ── Step 1: Teams SDK identity (works when loaded as a Teams tab) ──────────
   if(typeof microsoftTeams !== 'undefined'){
     try {
       await microsoftTeams.app.initialize();
       const ctx = await microsoftTeams.app.getContext();
-      const upn = ctx && ctx.user && ctx.user.loginHint;
+      const upn = ctx && ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
       if(upn){
-        // Try to get a token via Teams SSO
-        try {
-          const tokenResp = await microsoftTeams.authentication.getAuthToken();
-          // Exchange Teams token for Graph token via OBO flow isn't possible client-side
-          // Fall back to MSAL with hint
-          await initMSAL();
-          const accounts = msalInstance.getAllAccounts();
-          let matched = matchUserByEmail(upn);
-          if(accounts.length){
-            // Already have a cached token
-            const user = matchUserByEmail(upn);
-            if(user){ SESSION=user; storeSession(SESSION); applySession(); return; }
-          }
-          // Try silent MSAL with login hint
+        // Match by email directly — no Graph call needed for identity
+        const user = matchUserByEmail(upn);
+        if(user){
+          SESSION = user;
+          storeSession(SESSION);
+          document.getElementById('identityModal').classList.remove('active');
+          applySession();
+          // Silently acquire Graph token in background for data operations
           try {
             const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: upn });
             graphToken = resp.accessToken;
             tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
-            await resolveIdentityFromGraph();
-            return;
-          } catch(e2) {}
-          // Fall through to stored session or picker
-        } catch(e) {}
-        // Try matching by UPN directly
-        const user = matchUserByEmail(upn);
-        if(user){ SESSION=user; storeSession(SESSION); applySession(); return; }
+          } catch(e){
+            // Token will be acquired on first data operation via popup
+          }
+          return;
+        }
       }
-    } catch(e) {}
+    } catch(e){ /* Teams SDK not available or context unavailable */ }
   }
 
-  // 2. Try MSAL silent (cached token)
-  await initMSAL();
+  // ── Step 2: MSAL silent (cached token from previous session) ──────────────
   const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
   if(accounts.length){
     try {
@@ -2734,22 +2735,22 @@ populateIdentitySelect();
       tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
       await resolveIdentityFromGraph();
       return;
-    } catch(e) {}
+    } catch(e){ /* silent failed, fall through */ }
   }
 
-  // 3. Try stored session (fallback — no Graph token, limited to read-only local state)
+  // ── Step 3: Stored session (identity known, token needed) ─────────────────
   const stored = getStoredSession();
-  if(stored){ SESSION=stored; applySession(); 
-    // Show auth overlay to get a proper Graph token
-    document.getElementById('authOverlay').style.display='flex';
-    return; 
+  if(stored){
+    SESSION = stored;
+    applySession();
+    // Show sign-in button to get Graph token
+    document.getElementById('authOverlay').style.display = 'flex';
+    return;
   }
 
-  // 4. Show identity modal + auth overlay
+  // ── Step 4: Fresh start — show identity picker + sign-in ──────────────────
   document.getElementById('identityModal').classList.add('active');
-  document.getElementById('authOverlay').style.display='flex';
+  document.getElementById('authOverlay').style.display = 'flex';
 })();
-</script>
 
-</body>
-</html>
+</script>
