@@ -1024,20 +1024,25 @@ function applySearchHint(catId){
 /* ================================================================
    MSAL AUTH + GRAPH HELPERS
    ================================================================ */
-var msalInstance = null;
+// Initialise MSAL synchronously so it is always available
+var msalInstance = (function(){
+  try {
+    var inst = new msal.PublicClientApplication(MSAL_CONFIG);
+    inst.initialize(); // fire and forget - resolves quickly
+    return inst;
+  } catch(e) {
+    console.error('MSAL init failed:', e);
+    return null;
+  }
+})();
 var graphToken = null;
 var tokenExpiry = 0;
 var SESSION = null;
 var previousPage = 'log';
 
 function initMSAL(){
-  try {
-    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-    return msalInstance.initialize();
-  } catch(e) {
-    console.error('MSAL init failed:', e);
-    return Promise.resolve();
-  }
+  // Already initialised synchronously at startup
+  return Promise.resolve();
 }
 
 async function getGraphToken(){
@@ -1078,22 +1083,25 @@ async function graphFetch(method, path, body){
 
 async function msalSignIn(){
   document.getElementById('authError').style.display = 'none';
+  if(!msalInstance){
+    document.getElementById('authError').textContent = 'Authentication not ready — please refresh the page.';
+    document.getElementById('authError').style.display = 'block';
+    return;
+  }
   try {
-    // Try silent first (works if already signed into M365 in this browser)
-    let resp;
-    const loginHint = SESSION ? SESSION.email : '';
+    var loginHint = SESSION ? SESSION.email : '';
+    var resp;
     try {
-      resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
+      resp = await withTimeout(msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: loginHint }), 4000);
     } catch(e){
-      // Silent failed — use popup
-      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: loginHint });
     }
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
     document.getElementById('authOverlay').style.display = 'none';
     if(!SESSION) await resolveIdentityFromGraph();
   } catch(e) {
-    const err = document.getElementById('authError');
+    var err = document.getElementById('authError');
     err.textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
     err.style.display = 'block';
   }
@@ -2016,60 +2024,71 @@ function applySearchHint(catId){
    ================================================================ */
 populateIdentitySelect();
 
-(async function(){
-  await initMSAL();
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('timeout')); }, ms); })
+  ]);
+}
 
-  // ── Step 1: Teams SDK identity (works when loaded as a Teams tab) ──────────
+(async function(){
+
+  // ── Step 1: Try Teams SDK (with strict timeout so it never hangs) ──────────
+  var teamsUPN = null;
   if(typeof microsoftTeams !== 'undefined'){
     try {
-      await microsoftTeams.app.initialize();
-      const ctx = await microsoftTeams.app.getContext();
-      const upn = ctx && ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
-      if(upn){
-        // Match by email directly — no Graph call needed for identity
-        const user = matchUserByEmail(upn);
-        if(user){
-          SESSION = user;
-          storeSession(SESSION);
-          document.getElementById('identityModal').classList.remove('active');
-          applySession();
-          // Silently acquire Graph token in background for data operations
-          try {
-            const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: upn });
-            graphToken = resp.accessToken;
-            tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
-          } catch(e){
-            // Token will be acquired on first data operation via popup
-          }
-          return;
-        }
-      }
-    } catch(e){ /* Teams SDK not available or context unavailable */ }
+      await withTimeout(microsoftTeams.app.initialize(), 2000);
+      var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
+      teamsUPN = ctx && ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
+    } catch(e){ teamsUPN = null; }
   }
 
-  // ── Step 2: MSAL silent (cached token from previous session) ──────────────
-  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(teamsUPN){
+    var user = matchUserByEmail(teamsUPN);
+    if(user){
+      SESSION = user;
+      storeSession(SESSION);
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      // Try silent MSAL token — if it fails, show the connect button
+      try {
+        var r = await withTimeout(
+          msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 4000
+        );
+        graphToken = r.accessToken;
+        tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
+      } catch(e){
+        // Show the connect overlay to get token via popup
+        document.getElementById('authOverlay').style.display = 'flex';
+      }
+      return;
+    }
+  }
+
+  // ── Step 2: MSAL silent (cached token — works after first sign-in) ─────────
+  var accounts = msalInstance ? msalInstance.getAllAccounts() : [];
   if(accounts.length){
     try {
-      const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
-      graphToken = resp.accessToken;
-      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      var r2 = await withTimeout(
+        msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] }), 5000
+      );
+      graphToken = r2.accessToken;
+      tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
       await resolveIdentityFromGraph();
       return;
-    } catch(e){ /* silent failed, fall through */ }
+    } catch(e){ /* silent failed */ }
   }
 
-  // ── Step 3: Stored session (identity known, token needed) ─────────────────
-  const stored = getStoredSession();
+  // ── Step 3: Stored identity, need token ────────────────────────────────────
+  var stored = getStoredSession();
   if(stored){
     SESSION = stored;
     applySession();
-    // Show sign-in button to get Graph token
     document.getElementById('authOverlay').style.display = 'flex';
     return;
   }
 
-  // ── Step 4: Fresh start — show identity picker + sign-in ──────────────────
+  // ── Step 4: First visit — show picker and connect button ───────────────────
   document.getElementById('identityModal').classList.add('active');
   document.getElementById('authOverlay').style.display = 'flex';
 })();
