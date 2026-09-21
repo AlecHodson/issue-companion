@@ -735,7 +735,6 @@ const MGMT_LIST = [
   {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,canViewDashboard:true,zone:"Greenwood",email:"Leanne.Maynard@completechildcare.co.uk"},
   {name:"Ellie Richards",nursery:"Head Office",title:"Compliance Lead",isHR:true,canViewDashboard:true,zone:"all",email:"Ellie.Richards@completechildcare.co.uk"},
   {name:"Emma McIntyre",nursery:"Head Office",title:"Chief Commercial Officer",isHR:true,canViewDashboard:true,zone:"all",email:"Emma.McIntyre@completechildcare.co.uk"},
-  {name:"Karen Tate",nursery:"Head Office",title:"HR Business Partner",isHR:true,canViewDashboard:false,zone:"all",email:"karen.tate@completechildcare.co.uk"},
   {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,canViewDashboard:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
   {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,canViewDashboard:true,zone:"all",email:"louise.medley@completechildcare.co.uk"},
 ];
@@ -2043,7 +2042,9 @@ function withTimeout(promise, ms){
     try {
       await withTimeout(microsoftTeams.app.initialize(), 2000);
       var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
-      teamsUPN = ctx && ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
+      // Teams SDK v2 requires explicit user info request
+      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
+      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
     } catch(e){ teamsUPN = null; }
   }
 
