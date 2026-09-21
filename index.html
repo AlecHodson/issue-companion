@@ -1777,6 +1777,8 @@ function renderDetailView(issue, comments){
   const isManager = SESSION && SESSION.canViewDashboard;
   const canChangeStatus = isManager;
   const statusOptions = ['actioned','escalated','in-progress','resolved','closed'];
+  const archivedBadge = issue.archived ? `<span class="badge" style="background:#999;color:#fff;">Archived</span>` : '';
+  const archiveBtn = isManager ? `<button onclick="toggleArchiveIssue('${issue.id}')" style="margin-left:auto;padding:6px 12px;background:#ccc;border:none;border-radius:6px;cursor:pointer;font-size:12px;">${issue.archived ? 'Restore' : 'Archive'}</button>` : '';
   const statusSelect = canChangeStatus ? `
     <div class="status-row">
       <label>Status:</label>
@@ -1784,6 +1786,7 @@ function renderDetailView(issue, comments){
         ${statusOptions.map(s=>`<option value="${s}" ${issue.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
       </select>
       <span style="font-size:12px;color:var(--grey);margin-left:4px;">(changes save automatically)</span>
+      ${archiveBtn}
     </div>` : `<div class="status-row"><label>Status:</label> <span class="badge badge-${issue.status}">${issue.status.charAt(0).toUpperCase()+issue.status.slice(1)}</span></div>`;
 
   const commentsHtml = comments.length ? comments.map(c=>{
@@ -2110,6 +2113,36 @@ function withTimeout(promise, ms){
   document.getElementById('authOverlay').style.display = 'flex';
 })();
 
+
+
+async function toggleArchiveIssue(issueId){
+  if(!SESSION || !SESSION.canViewDashboard){
+    alert('Only managers can archive issues');
+    return;
+  }
+
+  const token = await getGraphToken();
+  if(!token){ alert('Not authenticated'); return; }
+
+  try {
+    showLoading('Updating issue...');
+    const issue = await getIssueById(issueId);
+    if(!issue) throw new Error('Issue not found');
+
+    issue.archived = !issue.archived;
+    const path = `/drives/${SHAREPOINT_DRIVE_ID}/items/${ISSUES_FOLDER_ID}:/${issueId}.json:/content`;
+    await graphCall(path, 'PUT', token, issue);
+
+    // Refresh detail view
+    const comments = await getCommentsForIssue(issueId);
+    renderDetailView(issue, comments);
+    alert(`Issue ${issue.archived ? 'archived' : 'restored'} successfully`);
+  } catch(e){
+    alert(`Error: ${e.message}`);
+  } finally {
+    hideLoading();
+  }
+}
 
 </script>
 </body>
