@@ -2130,7 +2130,7 @@ async function toggleArchiveIssue(issueId){
     if(!issue) throw new Error('Issue not found');
 
     issue.archived = !issue.archived;
-    const path = `/drives/${SHAREPOINT_DRIVE_ID}/items/${ISSUES_FOLDER_ID}:/${issueId}.json:/content`;
+    const path = `/drives/${DRIVE_ID}/root:/${ISSUES_PATH}/${issueId}.json:/content`;
     await graphCall(path, 'PUT', token, issue);
 
     // Refresh detail view
