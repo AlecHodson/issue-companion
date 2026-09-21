@@ -2054,15 +2054,16 @@ function withTimeout(promise, ms){
       storeSession(SESSION);
       document.getElementById('identityModal').classList.remove('active');
       applySession();
-      // Try silent MSAL token — if it fails, show the connect button
+      // In Teams context: use loginPopup for automatic sign-in (no user interaction needed)
       try {
         var r = await withTimeout(
-          msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 4000
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 8000
         );
         graphToken = r.accessToken;
         tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
       } catch(e){
-        // Show the connect overlay to get token via popup
+        // If popup fails, fall back to showing connect button
+        console.warn('Teams auto sign-in failed:', e.message);
         document.getElementById('authOverlay').style.display = 'flex';
       }
       return;
@@ -2080,7 +2081,18 @@ function withTimeout(promise, ms){
       tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
       await resolveIdentityFromGraph();
       return;
-    } catch(e){ /* silent failed */ }
+    } catch(e){ 
+      // Silent failed — try loginPopup as fallback
+      try {
+        var r2b = await withTimeout(
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, account: accounts[0] }), 8000
+        );
+        graphToken = r2b.accessToken;
+        tokenExpiry = r2b.expiresOn ? r2b.expiresOn.getTime() : Date.now()+3600000;
+        await resolveIdentityFromGraph();
+        return;
+      } catch(e2){ /* both silent and popup failed */ }
+    }
   }
 
   // ── Step 3: Stored identity, need token ────────────────────────────────────
