@@ -2084,9 +2084,34 @@ function withTimeout(promise, ms){
 
 // Initialize when DOM is ready
 function initSignIn(){
-  console.log('[IC] Init: populating identity select');
+  console.log('[IC] Init: checking for stored session first');
 
-  // Populate the dropdown
+  // FIRST: Check for stored session BEFORE populating dropdown
+  let storedSession = null;
+  try {
+    const sessionStr = sessionStorage.getItem('icSession');
+    console.log('[IC] sessionStorage.getItem("icSession") = ' + sessionStr);
+
+    if(sessionStr){
+      storedSession = JSON.parse(sessionStr);
+      console.log('[IC] Parsed stored session:', storedSession);
+    }
+  } catch(e){
+    console.log('[IC] Error reading stored session:', e.message);
+  }
+
+  // If we have a stored session, use it immediately
+  if(storedSession && (storedSession.name || storedSession.nursery)){
+    console.log('[IC] AUTO-SIGNING IN as:', storedSession.name || storedSession.nursery);
+    SESSION = storedSession;
+    document.getElementById('identityModal').classList.remove('active');
+    applySession();
+    return;
+  }
+
+  console.log('[IC] No stored session found, showing picker');
+
+  // SECOND: Populate the dropdown
   const sel = document.getElementById('idSelect');
   if(!sel){
     console.log('[IC] ERROR: idSelect element not found');
@@ -2118,20 +2143,6 @@ function initSignIn(){
   });
   sel.appendChild(mg);
   console.log('[IC] Added ' + MGMT_LIST.length + ' management users');
-
-  // Check for stored session
-  try {
-    const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
-    if(stored){
-      console.log('[IC] Found stored session for:', stored.name || stored.nursery);
-      SESSION = stored;
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      return;
-    }
-  } catch(e){
-    console.log('[IC] No valid stored session');
-  }
 
   // Show the picker
   console.log('[IC] Showing identity picker');
