@@ -2093,7 +2093,11 @@ function applySearchHint(catId){
 /* ================================================================
    INIT
    ================================================================ */
+// Populate immediately (sync)
 populateIdentitySelect();
+// Also on DOMContentLoaded and load as fallbacks
+document.addEventListener('DOMContentLoaded', function(){ populateIdentitySelect(); });
+window.addEventListener('load', function(){ populateIdentitySelect(); });
 
 function withTimeout(promise, ms){
   return Promise.race([
