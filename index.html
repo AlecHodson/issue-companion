@@ -1078,18 +1078,26 @@ function initMSAL(){
 
 async function getGraphToken(){
   if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
-  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
-  if(!accounts.length) return null;
+  if(!msalInstance){ return null; }
+  // Try silent
+  const accounts = msalInstance.getAllAccounts();
+  if(accounts.length > 0){
+    try {
+      const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+      graphToken = resp.accessToken;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      return graphToken;
+    } catch(e){ console.warn('[TOKEN] Silent failed:', e.message); }
+  }
+  // No cached account or silent failed — popup
   try {
-    const resp = await msalInstance.acquireTokenSilent({
-      scopes: GRAPH_SCOPES,
-      account: accounts[0]
-    });
+    const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
     graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     return graphToken;
-  } catch(e) {
-    graphToken = null;
+  } catch(e){
+    console.warn('[TOKEN] Popup failed:', e.message);
     return null;
   }
 }
@@ -1545,25 +1553,18 @@ async function saveDraft(){
   const desc=document.getElementById('descBox').value.trim();
   if(!desc){alert('Add a description before saving as draft.');return;}
   if(!selectedCat){alert('Select a category before saving.');return;}
-
-  // Ensure we have a graph token before trying to save
-  const token = await getGraphToken();
-  if(!token){
-    showToast('Please connect your Microsoft 365 account to save issues.');
-    return;
-  }
-
-  const issue=buildIssue(desc,'draft');
-  showLoading('Saving draft...');
+  showLoading('Saving...');
   try {
+    const token = await getGraphToken();
+    if(!token) throw new Error('Could not get Microsoft 365 token. Please sign in with Microsoft when prompted.');
+    const issue=buildIssue(desc,'draft');
     await writeIssue(issue);
     showToast('Draft saved. Find it in My Issues.');
   } catch(e){
     console.error('Save failed:', e);
-    showToast('Save failed: ' + (e.message || 'Unknown error'));
+    showToast('Save failed: ' + (e.message||'Unknown error'));
   } finally { hideLoading(); }
 }
-
 async function notifyOnSubmit(issue){
   const routing=ROUTING[issue.cat]||ROUTING['09'];
   const level=issue.governingRating;
