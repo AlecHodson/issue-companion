@@ -1545,13 +1545,22 @@ async function saveDraft(){
   const desc=document.getElementById('descBox').value.trim();
   if(!desc){alert('Add a description before saving as draft.');return;}
   if(!selectedCat){alert('Select a category before saving.');return;}
+
+  // Ensure we have a graph token before trying to save
+  const token = await getGraphToken();
+  if(!token){
+    showToast('Please connect your Microsoft 365 account to save issues.');
+    return;
+  }
+
   const issue=buildIssue(desc,'draft');
   showLoading('Saving draft...');
   try {
     await writeIssue(issue);
     showToast('Draft saved. Find it in My Issues.');
   } catch(e){
-    showToast('Save failed — please try again.');
+    console.error('Save failed:', e);
+    showToast('Save failed: ' + (e.message || 'Unknown error'));
   } finally { hideLoading(); }
 }
 
