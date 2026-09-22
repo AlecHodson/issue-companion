@@ -5,8 +5,6 @@
 <title>Issue Companion — Complete Childcare Group</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-<script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -307,19 +305,22 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 <div id="identityModal" class="active">
   <div class="id-box">
     <div class="id-logo" style="margin-bottom:14px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
-    <h2>Sign in to Issue Companion</h2>
-    <p style="font-size:13px;color:#666;">Use your Complete Childcare Microsoft account to sign in.</p>
-    <div id="idStatus" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
-    <div class="btn-row" style="margin-bottom:16px;">
-      <button class="id-btn" id="signInBtn" onclick="doSignIn()">Sign in with Microsoft</button>
+    <h2>Issue Companion</h2>
+    <p>Log, triage and resolve operational issues.</p>
+
+    <div id="idPasscodeStep">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Access Code</label>
+      <input id="idPasscode" type="password" placeholder="Enter your access code" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;margin-bottom:12px;" onkeydown="if(event.key==='Enter')checkPasscode()" />
+      <button class="id-btn" onclick="checkPasscode()">Continue</button>
     </div>
-    <div style="margin-top:8px;border-top:1px solid #eee;padding-top:14px;">
-      <p style="font-size:12px;color:#aaa;margin:0 0 8px;">Or select manually (if sign-in is unavailable):</p>
-      <select id="idSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;margin-bottom:12px;"><option value="">-- Select your nursery or name --</option></select>
-      <button class="id-btn" onclick="confirmIdentity()" style="width:100%;">Continue without sign-in</button>
+
+    <div id="idPickerStep" style="display:none;">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Select Your Name</label>
+      <select id="idSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;margin-bottom:12px;background:white;"><option value="">-- Select your name --</option></select>
+      <button class="id-btn" onclick="confirmIdentity()">Sign In</button>
     </div>
-    <div class="id-error" id="idError">Please select your nursery or name.</div>
-    <button class="id-btn" onclick="confirmIdentity()">Sign in</button>
+
+    <div class="id-error" id="idError" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;"></div>
   </div>
 </div>
 
@@ -683,12 +684,6 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 <!-- Panic button -->
 <button class="panic-btn" id="panicBtn" onclick="triggerCriticalEscalation()"><span class="panic-dot"></span> Critical escalation</button>
 
-
-<!-- M365 connect banner - shows when graph token missing -->
-<div id="m365Banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#764ba2;color:white;padding:10px 20px;z-index:9999;align-items:center;justify-content:space-between;font-size:13px;">
-  <span>&#9888; Connect to Microsoft 365 to load and save issues from SharePoint</span>
-  <button id="m365BannerBtn" style="background:white;color:#764ba2;border:none;padding:6px 14px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px;">Connect M365</button>
-</div>
 
 <div class="auth-overlay" id="authOverlay" style="display:none;">
   <div class="auth-box">
@@ -2076,99 +2071,84 @@ function applySearchHint(catId){
 }
 
 /* ================================================================
-   INIT — exact HR Companion pattern
+   INIT — simple passcode auth (no external dependencies)
    ================================================================ */
 
-async function initAuth() {
-  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-  await msalInstance.initialize();
+const IC_ADMIN_CODE = 'icadmin2026';
 
-  // Handle redirect response
-  try {
-    const resp = await msalInstance.handleRedirectPromise();
-    if (resp && resp.account) {
-      graphToken = resp.accessToken;
-      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
-      const user = matchUserByEmail(resp.account.username);
-      SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: resp.account.username};
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      return;
-    }
-  } catch(e) { console.warn('Redirect handle:', e); }
+function checkPasscode() {
+  const code = (document.getElementById('idPasscode').value || '').trim().toLowerCase();
+  const errEl = document.getElementById('idError');
+  errEl.style.display = 'none';
 
-  // Try Teams SSO first
-  if (typeof microsoftTeams !== 'undefined') {
-    try {
-      await microsoftTeams.app.initialize();
-      const ctx = await microsoftTeams.app.getContext();
-      const loginHint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
-      if (loginHint) {
-        try {
-          const silentResp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
-          graphToken = silentResp.accessToken;
-          tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now()+3600000;
-          const user = matchUserByEmail(loginHint);
-          SESSION = user || {name: loginHint, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: loginHint};
-          document.getElementById('identityModal').classList.remove('active');
-          applySession();
-          return;
-        } catch(e) { console.warn('Teams SSO silent failed:', e); }
-      }
-    } catch(e) { console.warn('Teams init:', e); }
+  // Check nursery passcodes
+  const nurseryMatch = NURSERY_LIST.find(u => u.nursery.toLowerCase().replace(/[^a-z]/g,'') === code || (u.passcode && u.passcode === code));
+  if (nurseryMatch) {
+    signInAs(nurseryMatch);
+    return;
   }
 
-  // Try silent from cached account
-  const accounts = msalInstance.getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      const silentResp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
-      graphToken = silentResp.accessToken;
-      tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now()+3600000;
-      const user = matchUserByEmail(accounts[0].username);
-      SESSION = user || {name: accounts[0].name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: accounts[0].username};
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      return;
-    } catch(e) { console.warn('Silent failed:', e); }
+  // Check management code
+  if (code === IC_ADMIN_CODE) {
+    document.getElementById('idPasscodeStep').style.display = 'none';
+    document.getElementById('idPickerStep').style.display = 'block';
+    populateIdentitySelect();
+    return;
   }
 
-  // All silent attempts failed — show picker
-  populateIdentitySelect();
+  errEl.textContent = 'Access code not recognised. Please try again.';
+  errEl.style.display = 'block';
+}
+
+function confirmIdentity() {
+  const sel = document.getElementById('idSelect');
+  const val = sel.value;
+  if (!val) {
+    document.getElementById('idError').textContent = 'Please select your name.';
+    document.getElementById('idError').style.display = 'block';
+    return;
+  }
+  const [type, idx] = val.split(':');
+  const user = type === 'n' ? NURSERY_LIST[parseInt(idx)] : MGMT_LIST[parseInt(idx)];
+  signInAs(user);
+}
+
+function signInAs(user) {
+  SESSION = user;
+  try { sessionStorage.setItem('icSession', JSON.stringify(user)); } catch(e) {}
+  document.getElementById('identityModal').classList.remove('active');
+  applySession();
+  renderDashboard();
+  renderMyIssues();
+}
+
+function clearIdentity() {
+  try { sessionStorage.removeItem('icSession'); } catch(e) {}
+  SESSION = null;
+  document.getElementById('idPasscodeStep').style.display = 'block';
+  document.getElementById('idPickerStep').style.display = 'none';
+  document.getElementById('idPasscode').value = '';
+  document.getElementById('idError').style.display = 'none';
   document.getElementById('identityModal').classList.add('active');
 }
 
-async function doSignIn() {
-  document.getElementById('idStatus').textContent = 'Signing in...';
+// On load: check for stored session, else show modal
+(function() {
   try {
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
-    graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
-    const user = matchUserByEmail(resp.account.username);
-    SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: resp.account.username};
-    document.getElementById('identityModal').classList.remove('active');
-    storeSession(SESSION);
-    applySession();
-    renderDashboard();
-    renderMyIssues();
-  } catch(e) {
-    document.getElementById('idStatus').textContent = 'Sign-in failed. Please try the manual option below.';
-    console.warn('Login popup failed:', e);
-  }
-}
-
-(async function(){
-  // Render app immediately in guest mode — no blank screen
-  SESSION = {name:'', nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email:''};
-  applySession();
-  // Then run auth
-  await initAuth();
-  // If authenticated, load data
-  if(graphToken){
-    renderDashboard();
-    renderMyIssues();
-  }
+    const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+    if (stored && (stored.name || stored.nursery)) {
+      SESSION = stored;
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      renderDashboard();
+      renderMyIssues();
+      return;
+    }
+  } catch(e) {}
+  // No stored session — show modal
+  document.getElementById('identityModal').classList.add('active');
 })();
+
 
 
 
