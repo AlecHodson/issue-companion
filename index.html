@@ -1077,24 +1077,41 @@ function initMSAL(){
 }
 
 async function getGraphToken(){
+  // Return cached token if still valid
   if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
-  if(!msalInstance){ return null; }
-  // Try silent
+  if(!msalInstance) return null;
+
+  const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
+
+  // 1. Try cached MSAL account (silent)
   const accounts = msalInstance.getAllAccounts();
   if(accounts.length > 0){
     try {
       const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
       graphToken = resp.accessToken;
       tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      console.log('[TOKEN] Got token silently from cached account');
       return graphToken;
-    } catch(e){ console.warn('[TOKEN] Silent failed:', e.message); }
+    } catch(e){ console.warn('[TOKEN] acquireTokenSilent failed:', e.message); }
   }
-  // No cached account or silent failed — popup
+
+  // 2. Try SSO silent using Teams login hint (works in Teams without popup)
+  if(loginHint){
+    try {
+      const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
+      graphToken = resp.accessToken;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      console.log('[TOKEN] Got token via ssoSilent for', loginHint);
+      return graphToken;
+    } catch(e){ console.warn('[TOKEN] ssoSilent failed:', e.message); }
+  }
+
+  // 3. Popup fallback (may be blocked in Teams — user must allow)
   try {
-    const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
     const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+    console.log('[TOKEN] Got token via popup');
     return graphToken;
   } catch(e){
     console.warn('[TOKEN] Popup failed:', e.message);
@@ -1559,24 +1576,16 @@ async function saveDraft(){
   showLoading('Saving...');
   try {
     const token = await getGraphToken();
-    if(!token) throw new Error('No M365 token — click Connect Microsoft 365 in sidebar');
+    if(!token) throw new Error('Could not get Microsoft 365 token. Please sign in with Microsoft when prompted.');
     const issue=buildIssue(desc,'draft');
-    // Test write directly to see full error
-    const path = ISSUES_PATH + '/' + issue.id + '.json';
-    const resp = await fetch(
-      'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
-      { method:'PUT', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(issue) }
-    );
-    if(!resp.ok){
-      const errText = await resp.text();
-      throw new Error('SharePoint error ' + resp.status + ': ' + errText.slice(0,200));
-    }
+    await writeIssue(issue);
     showToast('Draft saved. Find it in My Issues.');
   } catch(e){
     console.error('Save failed:', e);
     showToast('Save failed: ' + (e.message||'Unknown error'));
   } finally { hideLoading(); }
-}async function notifyOnSubmit(issue){
+}
+async function notifyOnSubmit(issue){
   const routing=ROUTING[issue.cat]||ROUTING['09'];
   const level=issue.governingRating;
   const recipients=[];
