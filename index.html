@@ -2083,52 +2083,79 @@ function withTimeout(promise, ms){
 }
 
 (async function(){
-  // Simplified auto sign-in: Teams identity → stored session → picker
 
-  function matchUserByEmail(email){
-    if(!email) return null;
-    const e = email.toLowerCase();
-    for(const u of MGMT_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
-    for(const u of NURSERY_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
-    return null;
-  }
-
-  function signInAs(user){
-    SESSION = user;
-    storeSession(SESSION);
-    document.getElementById('identityModal').classList.remove('active');
-    applySession();
-  }
-
-  // Populate picker first (in case we need it)
-  populateIdentitySelect();
-
-  // Try Teams SDK auto-sign-in
+  // ── Step 1: Try Teams SDK (with strict timeout so it never hangs) ──────────
+  var teamsUPN = null;
   if(typeof microsoftTeams !== 'undefined'){
     try {
-      await microsoftTeams.app.initialize();
-      const ctx = await microsoftTeams.app.getContext();
+      await withTimeout(microsoftTeams.app.initialize(), 2000);
+      var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
+      // Teams SDK v2 requires explicit user info request
+      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
+      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
+    } catch(e){ teamsUPN = null; }
+  }
 
-      // Try to extract email from Teams context
-      let email = null;
-      if(ctx && ctx.user && ctx.user.userPrincipalName) email = ctx.user.userPrincipalName;
-      if(!email && ctx && ctx.loginHint) email = ctx.loginHint;
-
-      if(email){
-        const user = matchUserByEmail(email);
-        if(user){ signInAs(user); return; }
+  if(teamsUPN){
+    var user = matchUserByEmail(teamsUPN);
+    if(user){
+      SESSION = user;
+      storeSession(SESSION);
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      // In Teams context: use loginPopup for automatic sign-in (no user interaction needed)
+      try {
+        var r = await withTimeout(
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 8000
+        );
+        graphToken = r.accessToken;
+        tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
+      } catch(e){
+        // If popup fails, fall back to showing connect button
+        console.warn('Teams auto sign-in failed:', e.message);
+        document.getElementById('authOverlay').style.display = 'flex';
       }
-    } catch(e){
-      // Teams SDK failed, continue to fallback
+      return;
     }
   }
 
-  // Try stored session
-  const stored = getStoredSession();
-  if(stored){ signInAs(stored); return; }
+  // ── Step 2: MSAL silent (cached token — works after first sign-in) ─────────
+  var accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(accounts.length){
+    try {
+      var r2 = await withTimeout(
+        msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] }), 5000
+      );
+      graphToken = r2.accessToken;
+      tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
+      await resolveIdentityFromGraph();
+      return;
+    } catch(e){ 
+      // Silent failed — try loginPopup as fallback
+      try {
+        var r2b = await withTimeout(
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, account: accounts[0] }), 8000
+        );
+        graphToken = r2b.accessToken;
+        tokenExpiry = r2b.expiresOn ? r2b.expiresOn.getTime() : Date.now()+3600000;
+        await resolveIdentityFromGraph();
+        return;
+      } catch(e2){ /* both silent and popup failed */ }
+    }
+  }
 
-  // Show picker as last resort
+  // ── Step 3: Stored identity, need token ────────────────────────────────────
+  var stored = getStoredSession();
+  if(stored){
+    SESSION = stored;
+    applySession();
+    document.getElementById('authOverlay').style.display = 'flex';
+    return;
+  }
+
+  // ── Step 4: First visit — show picker and connect button ───────────────────
   document.getElementById('identityModal').classList.add('active');
+  document.getElementById('authOverlay').style.display = 'flex';
 })();
 
 
