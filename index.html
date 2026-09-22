@@ -1698,7 +1698,7 @@ async function renderAllIssues(){
 }
 
 async function renderArchivedIssues(){
-  if(!(SESSION&&SESSION.canViewDashboard)){
+  if(!SESSION){
     const el=document.getElementById('archivedIssuesContent');
     if(el) el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Access restricted.</p>';
     return;
@@ -1706,7 +1706,11 @@ async function renderArchivedIssues(){
   showLoading('Loading archived issues...');
   try {
     const allIssues=await getAllIssues();
+    // Managers see all archived; nursery users see only their own nursery
     let issues=allIssues.filter(i=>i.archived);
+    if(!SESSION.canViewDashboard){
+      issues=issues.filter(i=>i.nursery===SESSION.nursery);
+    }
     const sev=document.getElementById('filterArchivedSeverity').value;
     const stat=document.getElementById('filterArchivedStatus').value;
     if(sev)issues=issues.filter(i=>i.governingRating===sev);
