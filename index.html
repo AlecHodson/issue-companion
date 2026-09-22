@@ -2153,13 +2153,24 @@ function withTimeout(promise, ms){
     }
   }
 
-  // ── Step 3: Stored identity ────────────────────────────────────────────────
+  // ── Step 3: Stored identity — try silent token, else show connect button ────
   var stored = getStoredSession();
   if(stored){
     SESSION = stored;
     document.getElementById('identityModal').classList.remove('active');
     applySession();
-    // Don't show authOverlay — user signed in via signin.html, SharePoint works via app token
+    // Try silent MSAL token using stored email so SharePoint works without a popup
+    if(msalInstance && stored.email){
+      try {
+        var r3 = await withTimeout(
+          msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: stored.email }), 4000
+        );
+        graphToken = r3.accessToken;
+        tokenExpiry = r3.expiresOn ? r3.expiresOn.getTime() : Date.now()+3600000;
+        return;
+      } catch(e){ /* silent failed — show connect button */ }
+    }
+    document.getElementById('authOverlay').style.display = 'flex';
     return;
   }
 
@@ -2171,8 +2182,8 @@ function withTimeout(promise, ms){
 
 
 async function toggleArchiveIssue(issueId){
-  if(!SESSION || !SESSION.canViewDashboard){
-    alert('Only managers can archive issues');
+  if(!SESSION){
+    alert('Please sign in to archive issues');
     return;
   }
 
