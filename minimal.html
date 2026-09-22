@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Issue Companion - Minimal Test</title>
+  <style>
+    body { font-family: Arial; padding: 40px; background: #f5f5f5; }
+    .box { background: white; padding: 30px; border-radius: 8px; max-width: 400px; }
+    select { width: 100%; padding: 10px; font-size: 14px; margin: 10px 0; }
+    button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 3px solid #007bff; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Issue Companion - Minimal Sign-In</h1>
+
+    <p>Select your identity:</p>
+    <select id="idSelect">
+      <option value="">-- Loading --</option>
+    </select>
+
+    <button onclick="signIn()">Sign In</button>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    // Test data
+    const NURSERY_LIST = [
+      {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false,email:"abacus@completechildcare.co.uk"},
+      {name:"Bees Knees Day Nursery",nursery:"Bees Knees Day Nursery",zone:"BlueWater",isHR:false,email:"beesknees@completechildcare.co.uk"},
+      {name:"Bramley Wood Day Nursery",nursery:"Bramley Wood Day Nursery",zone:"Greenwood",isHR:false,email:"bramleywood@completechildcare.co.uk"}
+    ];
+
+    const MGMT_LIST = [
+      {name:"Alec Hodson",title:"Group Chief Executive",email:"alec.hodson@completechildcare.co.uk"},
+      {name:"Emma McIntyre",title:"Chief Commercial Officer",email:"emma.mcintyre@completechildcare.co.uk"},
+      {name:"Pav Bilkhu",title:"Area Manager - BlueWater",email:"pav.bilkhu@completechildcare.co.uk"}
+    ];
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      const line = document.createElement('div');
+      line.textContent = msg;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+      console.log(msg);
+    }
+
+    function populate() {
+      log('[POPULATE] Starting...');
+
+      const sel = document.getElementById('idSelect');
+      if(!sel) {
+        log('[ERROR] Select not found!');
+        return;
+      }
+
+      log('[POPULATE] Select found');
+
+      sel.innerHTML = '<option value="">-- Select nursery or name --</option>';
+
+      // Add nurseries
+      const ng = document.createElement('optgroup');
+      ng.label = 'Nurseries';
+      NURSERY_LIST.forEach((u, i) => {
+        const o = document.createElement('option');
+        o.value = 'n:' + i;
+        o.textContent = u.nursery;
+        ng.appendChild(o);
+      });
+      sel.appendChild(ng);
+      log('[POPULATE] Added ' + NURSERY_LIST.length + ' nurseries');
+
+      // Add management
+      const mg = document.createElement('optgroup');
+      mg.label = 'Management';
+      MGMT_LIST.forEach((u, i) => {
+        const o = document.createElement('option');
+        o.value = 'm:' + i;
+        o.textContent = u.name + ' — ' + u.title;
+        mg.appendChild(o);
+      });
+      sel.appendChild(mg);
+      log('[POPULATE] Added ' + MGMT_LIST.length + ' management');
+
+      log('[POPULATE] SUCCESS: ' + sel.options.length + ' total options');
+    }
+
+    function signIn() {
+      const sel = document.getElementById('idSelect');
+      const val = sel.value;
+
+      if(!val) {
+        log('[SIGNIN] No selection!');
+        return;
+      }
+
+      const [type, idx] = val.split(':');
+      let user;
+
+      if(type === 'n') {
+        user = NURSERY_LIST[parseInt(idx)];
+      } else {
+        user = MGMT_LIST[parseInt(idx)];
+      }
+
+      log('[SIGNIN] Selected: ' + (user.name || user.nursery));
+      log('[SIGNIN] Storing session...');
+
+      try {
+        sessionStorage.setItem('minimalSession', JSON.stringify(user));
+        log('[SIGNIN] Stored OK');
+      } catch(e) {
+        log('[SIGNIN] Store error: ' + e.message);
+      }
+    }
+
+    // Populate on load
+    window.addEventListener('load', populate);
+
+    // Also try immediately
+    if(document.readyState !== 'loading') {
+      populate();
+    }
+  </script>
+</body>
+</html>
