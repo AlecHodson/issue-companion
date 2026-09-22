@@ -744,6 +744,36 @@ const MGMT_LIST = [
   {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,canViewDashboard:true,zone:"all",email:"louise.medley@completechildcare.co.uk"},
 ];
 
+// AUTO-POPULATE DROPDOWN
+(function(){
+  function pop(){
+    const s = document.getElementById('idSelect');
+    if(!s) return;
+    s.innerHTML = '<option>— Select —</option>';
+    const ng = document.createElement('optgroup');
+    ng.label = 'Nurseries';
+    NURSERY_LIST.forEach((u,i)=>{
+      const o = document.createElement('option');
+      o.value = 'n:'+i;
+      o.textContent = u.nursery;
+      ng.appendChild(o);
+    });
+    s.appendChild(ng);
+    const mg = document.createElement('optgroup');
+    mg.label = 'Management';
+    MGMT_LIST.forEach((u,i)=>{
+      const o = document.createElement('option');
+      o.value = 'm:'+i;
+      o.textContent = u.name;
+      mg.appendChild(o);
+    });
+    s.appendChild(mg);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',pop);
+  else pop();
+})();
+
+
 // ===== POPULATE AFTER LISTS DEFINED =====
 (function(){
   function populateNow(){
