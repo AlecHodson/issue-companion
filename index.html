@@ -1666,7 +1666,7 @@ async function renderAllIssues(){
   }
   el.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
   try {
-    let issues=await getAllIssues();
+    let issues=(await getAllIssues()).filter(i=>!i.archived);
     const sev=document.getElementById('filterSeverity').value;
     const stat=document.getElementById('filterStatus').value;
     if(sev) issues=issues.filter(i=>i.governingRating===sev);
@@ -1705,9 +1705,9 @@ async function renderDashboard(){
   showLoading('Loading dashboard...');
   try {
     const issues=await getAllIssues();
-    const open=issues.filter(i=>i.status!=='closed'&&i.status!=='draft');
-    const escalated=issues.filter(i=>i.status==='escalated');
-    const critical=issues.filter(i=>i.governingRating==='critical'&&i.status!=='closed');
+    const open=issues.filter(i=>i.status!=='closed'&&i.status!=='draft'&&!i.archived);
+    const escalated=issues.filter(i=>i.status==='escalated'&&!i.archived);
+    const critical=issues.filter(i=>i.governingRating==='critical'&&i.status!=='closed'&&!i.archived);
     const mismatches=issues.filter(i=>i.copilotRating&&i.copilotRating!==i.userRating);
     const kpiGrid=document.getElementById('kpiGrid');
     if(kpiGrid) kpiGrid.innerHTML=`
@@ -2046,11 +2046,8 @@ function withTimeout(promise, ms){
       await withTimeout(microsoftTeams.app.initialize(), 2000);
       var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
       // Teams SDK v2 requires explicit user info request
-      // Teams SDK v2 doesn't reliably expose userPrincipalName
-      // Instead, use stored session email as loginHint for ssoSilent
-      teamsUPN = null;
-      const stored = getStoredSession();
-      if(stored && stored.email) teamsUPN = stored.email;
+      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
+      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
     } catch(e){ teamsUPN = null; }
   }
 
@@ -2124,22 +2121,23 @@ async function toggleArchiveIssue(issueId){
     return;
   }
 
-  const token = await getGraphToken();
-  if(!token){ alert('Not authenticated'); return; }
-
   try {
     showLoading('Updating issue...');
     const issue = await getIssueById(issueId);
     if(!issue) throw new Error('Issue not found');
 
     issue.archived = !issue.archived;
-    const path = `/drives/${DRIVE_ID}/root:/${ISSUES_PATH}/${issueId}.json:/content`;
-    await graphCall(path, 'PUT', token, issue);
+    const path = ISSUES_PATH + '/' + issueId + '.json';
+    await spWriteJSON(path, JSON.stringify(issue));
 
     // Refresh detail view
     const comments = await getCommentsForIssue(issueId);
     renderDetailView(issue, comments);
     alert(`Issue ${issue.archived ? 'archived' : 'restored'} successfully`);
+
+    // Refresh dashboard to show/hide archived issue
+    renderDashboard();
+    renderMyIssues();
   } catch(e){
     alert(`Error: ${e.message}`);
   } finally {
