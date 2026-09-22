@@ -307,9 +307,17 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 <div id="identityModal" class="active">
   <div class="id-box">
     <div class="id-logo" style="margin-bottom:14px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
-    <h2>Issue Companion</h2>
-    <p>Log, triage and resolve operational issues. Select your nursery or role to continue.</p>
-    <select id="idSelect"><option value="">— Select your nursery or name —</option></select>
+    <h2>Sign in to Issue Companion</h2>
+    <p style="font-size:13px;color:#666;">Use your Complete Childcare Microsoft account to sign in.</p>
+    <div id="idStatus" style="font-size:13px;color:#888;margin-bottom:12px;"></div>
+    <div class="btn-row" style="margin-bottom:16px;">
+      <button class="id-btn" id="signInBtn" onclick="doSignIn()">Sign in with Microsoft</button>
+    </div>
+    <div style="margin-top:8px;border-top:1px solid #eee;padding-top:14px;">
+      <p style="font-size:12px;color:#aaa;margin:0 0 8px;">Or select manually (if sign-in is unavailable):</p>
+      <select id="idSelect" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;margin-bottom:12px;"><option value="">-- Select your nursery or name --</option></select>
+      <button class="id-btn" onclick="confirmIdentity()" style="width:100%;">Continue without sign-in</button>
+    </div>
     <div class="id-error" id="idError">Please select your nursery or name.</div>
     <button class="id-btn" onclick="confirmIdentity()">Sign in</button>
   </div>
@@ -2147,6 +2155,7 @@ async function msalSignIn() {
     applySession();
   } catch(e) {
     console.warn('Login popup failed:', e);
+    if(statusEl) statusEl.textContent = 'Sign-in failed. Please try the manual option below.';
     document.getElementById('idError').textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
     document.getElementById('idError').style.display = 'block';
   }
