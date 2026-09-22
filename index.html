@@ -1559,16 +1559,24 @@ async function saveDraft(){
   showLoading('Saving...');
   try {
     const token = await getGraphToken();
-    if(!token) throw new Error('Could not get Microsoft 365 token. Please sign in with Microsoft when prompted.');
+    if(!token) throw new Error('No M365 token — click Connect Microsoft 365 in sidebar');
     const issue=buildIssue(desc,'draft');
-    await writeIssue(issue);
+    // Test write directly to see full error
+    const path = ISSUES_PATH + '/' + issue.id + '.json';
+    const resp = await fetch(
+      'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
+      { method:'PUT', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(issue) }
+    );
+    if(!resp.ok){
+      const errText = await resp.text();
+      throw new Error('SharePoint error ' + resp.status + ': ' + errText.slice(0,200));
+    }
     showToast('Draft saved. Find it in My Issues.');
   } catch(e){
     console.error('Save failed:', e);
     showToast('Save failed: ' + (e.message||'Unknown error'));
   } finally { hideLoading(); }
-}
-async function notifyOnSubmit(issue){
+}async function notifyOnSubmit(issue){
   const routing=ROUTING[issue.cat]||ROUTING['09'];
   const level=issue.governingRating;
   const recipients=[];
