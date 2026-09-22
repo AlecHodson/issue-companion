@@ -300,6 +300,21 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 .issue-row{cursor:pointer;transition:background .1s;}
 .issue-row:hover td{background:var(--purple-tint)!important;}
 </style>
+
+  <script>
+    // IMMEDIATE: Check for stored session and auto-sign-in
+    (function(){
+      try {
+        const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+        if(stored && (stored.name || stored.nursery)){
+          console.log('[IC-INLINE] Auto-signing in:', stored.name || stored.nursery);
+          window.AUTO_SESSION = stored;
+        }
+      } catch(e) {
+        console.log('[IC-INLINE] No stored session');
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -2087,17 +2102,22 @@ function initSignIn(){
   console.log('[IC] Init: checking for stored session first');
 
   // FIRST: Check for stored session BEFORE populating dropdown
-  let storedSession = null;
-  try {
-    const sessionStr = sessionStorage.getItem('icSession');
-    console.log('[IC] sessionStorage.getItem("icSession") = ' + sessionStr);
+  let storedSession = window.AUTO_SESSION || null;
 
-    if(sessionStr){
-      storedSession = JSON.parse(sessionStr);
-      console.log('[IC] Parsed stored session:', storedSession);
+  if(!storedSession){
+    try {
+      const sessionStr = sessionStorage.getItem('icSession');
+      console.log('[IC] sessionStorage.getItem("icSession") = ' + sessionStr);
+
+      if(sessionStr){
+        storedSession = JSON.parse(sessionStr);
+        console.log('[IC] Parsed stored session:', storedSession);
+      }
+    } catch(e){
+      console.log('[IC] Error reading stored session:', e.message);
     }
-  } catch(e){
-    console.log('[IC] Error reading stored session:', e.message);
+  } else {
+    console.log('[IC] Using pre-cached session from window.AUTO_SESSION');
   }
 
   // If we have a stored session, use it immediately
