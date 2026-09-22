@@ -13,6 +13,88 @@
   </style>
 </head>
 <body>
+
+<script>
+(async function(){
+  console.log('[AUTO] Page loaded, attempting auto-signin via Teams...');
+
+  try {
+    // Check if lists are loaded
+    if(typeof NURSERY_LIST === 'undefined' || typeof MGMT_LIST === 'undefined'){
+      console.log('[AUTO] Lists not loaded yet');
+      return;
+    }
+    console.log('[AUTO] Lists loaded:', NURSERY_LIST.length, 'nurseries,', MGMT_LIST.length, 'managers');
+
+    // Try Teams SDK
+    if(typeof microsoftTeams === 'undefined'){
+      console.log('[AUTO] Teams SDK not available');
+      return;
+    }
+
+    console.log('[AUTO] Initializing Teams SDK...');
+    await microsoftTeams.app.initialize();
+    const ctx = await microsoftTeams.app.getContext();
+
+    let email = null;
+    if(ctx && ctx.user && ctx.user.userPrincipalName){
+      email = ctx.user.userPrincipalName;
+      console.log('[AUTO] Got Teams UPN:', email);
+    } else {
+      console.log('[AUTO] No UPN in Teams context');
+      return;
+    }
+
+    // Try to match email
+    const e = email.toLowerCase();
+    let user = null;
+
+    // Check managers
+    for(let u of MGMT_LIST){
+      if((u.email || '').toLowerCase() === e){
+        user = u;
+        console.log('[AUTO] Matched manager:', u.name);
+        break;
+      }
+    }
+
+    // Check nurseries
+    if(!user){
+      for(let u of NURSERY_LIST){
+        if((u.email || '').toLowerCase() === e){
+          user = u;
+          console.log('[AUTO] Matched nursery:', u.nursery);
+          break;
+        }
+      }
+    }
+
+    if(!user){
+      console.log('[AUTO] No user match for:', email);
+      return;
+    }
+
+    // Sign in
+    console.log('[AUTO] AUTO-SIGNING IN:', user.name || user.nursery);
+    window.SESSION = user;
+    try {
+      sessionStorage.setItem('icSession', JSON.stringify(user));
+    } catch(e){}
+
+    // Hide modal and show dashboard
+    const modal = document.getElementById('identityModal');
+    if(modal) modal.classList.remove('active');
+
+    if(typeof applySession === 'function'){
+      applySession();
+    }
+
+  } catch(e){
+    console.log('[AUTO] Error:', e.message);
+  }
+})();
+</script>
+
   <h1>Issue Companion - Sign In Diagnostic</h1>
 
   <div class="test-box">
