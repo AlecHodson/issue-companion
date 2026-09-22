@@ -137,23 +137,66 @@ const MGMT_LIST = [
         return;
       }
 
-      const [type, idx] = val.split(':');
-      let user;
+      try {
+        log('signInLog', '[✓] Selection value: ' + val);
 
-      if(type === 'n') {
-        user = NURSERY_LIST[parseInt(idx)];
-      } else {
-        user = MGMT_LIST[parseInt(idx)];
+        const parts = val.split(':');
+        const type = parts[0];
+        const idx = parseInt(parts[1]);
+
+        log('signInLog', '[✓] Type: ' + type + ', Index: ' + idx);
+
+        let user;
+
+        if(type === 'n') {
+          user = NURSERY_LIST[idx];
+          log('signInLog', '[✓] Looking up nursery at index ' + idx);
+        } else if(type === 'm') {
+          user = MGMT_LIST[idx];
+          log('signInLog', '[✓] Looking up manager at index ' + idx);
+        } else {
+          log('signInLog', '[✗] Unknown type: ' + type, true);
+          return;
+        }
+
+        if(!user) {
+          log('signInLog', '[✗] User not found at index ' + idx, true);
+          return;
+        }
+
+        log('signInLog', '[✓] User object: ' + JSON.stringify(user));
+        log('signInLog', '[✓] Selected: ' + (user.name || user.nursery));
+
+        const sessionData = JSON.stringify(user);
+        log('signInLog', '[✓] Session data: ' + sessionData);
+
+        try {
+          sessionStorage.setItem('icSession', sessionData);
+          log('signInLog', '[✓] Session stored in sessionStorage');
+
+          // Verify it was stored
+          const retrieved = sessionStorage.getItem('icSession');
+          if(retrieved) {
+            log('signInLog', '[✓] Verified: session retrieved from storage');
+          } else {
+            log('signInLog', '[✗] ERROR: session not found after storing!', true);
+            return;
+          }
+        } catch(e) {
+          log('signInLog', '[✗] ERROR storing session: ' + e.message, true);
+          return;
+        }
+
+        log('signInLog', '[✓] Redirecting to main app in 2s...');
+
+        setTimeout(() => {
+          window.location.href = 'https://alechodson.github.io/issue-companion/';
+        }, 2000);
+
+      } catch(e) {
+        log('signInLog', '[✗] ERROR: ' + e.message, true);
+        log('signInLog', '[✗] Stack: ' + e.stack, true);
       }
-
-      log('signInLog', '[✓] Selected: ' + (user.name || user.nursery));
-      log('signInLog', '[✓] Storing session...');
-      sessionStorage.setItem('icSession', JSON.stringify(user));
-      log('signInLog', '[✓] Session stored - redirecting to main app in 2s...');
-
-      setTimeout(() => {
-        window.location.href = 'https://alechodson.github.io/issue-companion/';
-      }, 2000);
     }
   </script>
 </body>
