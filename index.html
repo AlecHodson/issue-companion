@@ -1100,7 +1100,7 @@ async function graphFetch(method, path, body){
 /* ================================================================
    SHAREPOINT DATA LAYER
    ================================================================ */
-async async function spReadJSON(path){
+async function spReadJSON(path){
   try {
     const token = await getGraphToken();
     if(!token) return null;
@@ -1163,7 +1163,7 @@ async function getAllIssues(){
   } finally { hideLoading(); }
 }
 
-async async function getMyIssues(){
+async function getMyIssues(){
   const all = await getAllIssues();
   if(!SESSION) return all;
   if(SESSION.canViewDashboard) return all;
@@ -1623,7 +1623,7 @@ function resetForm(){
 /* ================================================================
    MY ISSUES
    ================================================================ */
-async async function renderMyIssues(){
+async function renderMyIssues(){
   const el=document.getElementById('myIssuesContent');
   if(!SESSION){el.innerHTML='<p style="color:var(--grey);font-size:13.5px;">Sign in to see your issues.</p>';return;}
   el.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="color:var(--grey);margin-top:14px;">Loading issues...</p></div>';
