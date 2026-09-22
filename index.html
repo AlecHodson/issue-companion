@@ -1118,9 +1118,12 @@ async function spReadJSON(path){
   try {
     const token = await getGraphToken();
     if(!token) return null;
-    // Get download URL first
-    const meta = await graphFetch('GET', '/drives/' + DRIVE_ID + '/root:/' + path + ':/content');
-    return meta; // graphFetch returns parsed JSON
+    const resp = await fetch(
+      'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if(!resp.ok) return null;
+    return await resp.json();
   } catch(e) { return null; }
 }
 
@@ -2174,7 +2177,7 @@ async function toggleArchiveIssue(issueId){
 
     issue.archived = !issue.archived;
     const path = ISSUES_PATH + '/' + issueId + '.json';
-    await spWriteJSON(path, JSON.stringify(issue));
+    await spWriteJSON(path, issue);
 
     // Refresh detail view
     const comments = await getCommentsForIssue(issueId);
