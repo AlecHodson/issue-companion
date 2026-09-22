@@ -306,21 +306,15 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
   <div class="id-box">
     <div class="id-logo" style="margin-bottom:14px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
     <h2>Issue Companion</h2>
-    <p>Log, triage and resolve operational issues.</p>
-
-    <div id="idPasscodeStep">
-      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Access Code</label>
-      <input id="idPasscode" type="password" placeholder="Enter your access code" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;margin-bottom:12px;" onkeydown="if(event.key==='Enter')checkPasscode()" />
-      <button class="id-btn" onclick="checkPasscode()">Continue</button>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;">Log, triage and resolve operational issues.</p>
+    <div id="idStatus" style="font-size:13px;color:#888;margin-bottom:12px;min-height:18px;"></div>
+    <button class="id-btn" onclick="msalSignIn()" style="width:100%;margin-bottom:16px;">Sign in with Microsoft 365</button>
+    <div style="border-top:1px solid #eee;padding-top:14px;">
+      <p style="font-size:11px;color:#aaa;margin:0 0 8px;">Or select manually if sign-in is unavailable:</p>
+      <select id="idSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:white;margin-bottom:10px;"><option value="">-- Select your name --</option></select>
+      <button class="id-btn" onclick="confirmIdentity()" style="width:100%;">Continue without sign-in</button>
     </div>
-
-    <div id="idPickerStep" style="display:none;">
-      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Select Your Name</label>
-      <select id="idSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;margin-bottom:12px;background:white;"><option value="">-- Select your name --</option></select>
-      <button class="id-btn" onclick="confirmIdentity()">Sign In</button>
-    </div>
-
-    <div class="id-error" id="idError" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;"></div>
+    <div class="id-error" id="idError" style="display:none;color:#ef4444;font-size:13px;margin-top:10px;"></div>
   </div>
 </div>
 
@@ -1576,12 +1570,20 @@ async function saveDraft(){
   showLoading('Saving...');
   try {
     const token = await getGraphToken();
-    if(!token) throw new Error('Could not get Microsoft 365 token. Please sign in with Microsoft when prompted.');
+    if(!token) throw new Error('No Microsoft 365 token. Please sign in with Microsoft 365.');
     const issue=buildIssue(desc,'draft');
-    await writeIssue(issue);
+    const path = ISSUES_PATH + '/' + issue.id + '.json';
+    const resp = await fetch(
+      'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
+      { method:'PUT', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(issue) }
+    );
+    if(!resp.ok){
+      const errText = await resp.text();
+      throw new Error('SharePoint ' + resp.status + ': ' + errText.slice(0,150));
+    }
     showToast('Draft saved. Find it in My Issues.');
   } catch(e){
-    console.error('Save failed:', e);
+    console.error('[SAVE]', e);
     showToast('Save failed: ' + (e.message||'Unknown error'));
   } finally { hideLoading(); }
 }
@@ -2121,81 +2123,124 @@ function applySearchHint(catId){
    INIT — simple passcode auth (no external dependencies)
    ================================================================ */
 
-const IC_ADMIN_CODE = 'icadmin2026';
+/* ================================================================
+   AUTH — MSAL-first, manual picker fallback
+   ================================================================ */
 
-function checkPasscode() {
-  const code = (document.getElementById('idPasscode').value || '').trim().toLowerCase();
+async function msalSignIn() {
+  const statusEl = document.getElementById('idStatus');
   const errEl = document.getElementById('idError');
-  errEl.style.display = 'none';
-
-  // Check nursery passcodes — first word of nursery name (e.g. "abacus", "saltway", "happitots")
-  const nurseryMatch = NURSERY_LIST.find(u => {
-    const firstWord = u.nursery.toLowerCase().split(' ')[0].replace(/[^a-z]/g,'');
-    return firstWord === code || (u.passcode && u.passcode === code);
-  });
-  if (nurseryMatch) {
-    signInAs(nurseryMatch);
-    return;
-  }
-
-  // Check management code
-  if (code === IC_ADMIN_CODE) {
-    document.getElementById('idPasscodeStep').style.display = 'none';
-    document.getElementById('idPickerStep').style.display = 'block';
+  if(statusEl) statusEl.textContent = 'Signing in with Microsoft...';
+  if(errEl) errEl.style.display = 'none';
+  try {
+    if(!msalInstance) throw new Error('Auth not ready — please wait a moment and try again.');
+    const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+    const user = matchUserByEmail(resp.account.username);
+    SESSION = user || { name: resp.account.name, nursery: 'Complete Childcare Group', title: '', isHR: true, canViewDashboard: true, email: resp.account.username };
+    try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
+    document.getElementById('identityModal').classList.remove('active');
+    applySession();
+    renderDashboard();
+    renderMyIssues();
+  } catch(e) {
+    console.warn('[MSAL] Login failed:', e.message);
+    if(statusEl) statusEl.textContent = 'Sign-in failed. Please try the manual option below.';
     populateIdentitySelect();
-    return;
   }
-
-  errEl.textContent = 'Access code not recognised. Please try again.';
-  errEl.style.display = 'block';
 }
 
 function confirmIdentity() {
   const sel = document.getElementById('idSelect');
-  const val = sel.value;
-  if (!val) {
-    document.getElementById('idError').textContent = 'Please select your name.';
-    document.getElementById('idError').style.display = 'block';
+  const val = sel ? sel.value : '';
+  if(!val) {
+    const e = document.getElementById('idError');
+    if(e){ e.textContent = 'Please select your name.'; e.style.display = 'block'; }
     return;
   }
   const [type, idx] = val.split(':');
   const user = type === 'n' ? NURSERY_LIST[parseInt(idx)] : MGMT_LIST[parseInt(idx)];
-  signInAs(user);
-}
-
-function signInAs(user) {
   SESSION = user;
-  try { sessionStorage.setItem('icSession', JSON.stringify(user)); } catch(e) {}
+  try { sessionStorage.setItem('icSession', JSON.stringify(user)); } catch(e){}
   document.getElementById('identityModal').classList.remove('active');
   applySession();
-  if(typeof renderDashboard === 'function') renderDashboard();
-  if(typeof renderMyIssues === 'function') renderMyIssues();
+  renderDashboard();
+  renderMyIssues();
 }
 
 function clearIdentity() {
-  try { sessionStorage.removeItem('icSession'); } catch(e) {}
-  SESSION = null;
-  document.getElementById('idPasscodeStep').style.display = 'block';
-  document.getElementById('idPickerStep').style.display = 'none';
-  document.getElementById('idPasscode').value = '';
-  document.getElementById('idError').style.display = 'none';
+  try { sessionStorage.removeItem('icSession'); } catch(e){}
+  SESSION = null; graphToken = null; tokenExpiry = 0;
   document.getElementById('identityModal').classList.add('active');
+  populateIdentitySelect();
 }
 
-// On load: check for stored session, else show modal
-(function() {
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(async function(){
+  // 1. Check stored session
   try {
     const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
-    if (stored && (stored.name || stored.nursery)) {
+    if(stored && (stored.name || stored.nursery)){
       SESSION = stored;
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      if(typeof renderDashboard === 'function') renderDashboard();
-      if(typeof renderMyIssues === 'function') renderMyIssues();
-      return;
     }
-  } catch(e) {}
-  // No stored session — show modal
+  } catch(e){}
+
+  // 2. Try MSAL silent auth (works if user has cached M365 session)
+  if(msalInstance){
+    try {
+      await msalInstance.handleRedirectPromise();
+    } catch(e){}
+
+    // Try Teams SSO silent first
+    if(typeof microsoftTeams !== 'undefined'){
+      try {
+        await microsoftTeams.app.initialize();
+        const ctx = await microsoftTeams.app.getContext();
+        const hint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
+        if(hint){
+          const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
+          graphToken = resp.accessToken;
+          tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+          if(!SESSION || !SESSION.email){
+            const user = matchUserByEmail(hint);
+            if(user) SESSION = user;
+          }
+          console.log('[INIT] Got token via Teams ssoSilent');
+        }
+      } catch(e){ console.warn('[INIT] Teams SSO failed:', e.message); }
+    }
+
+    // Try cached account silent
+    if(!graphToken){
+      const accounts = msalInstance.getAllAccounts();
+      if(accounts.length > 0){
+        try {
+          const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+          graphToken = resp.accessToken;
+          tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+          if(!SESSION || !SESSION.email){
+            const user = matchUserByEmail(accounts[0].username);
+            if(user) SESSION = user;
+          }
+          console.log('[INIT] Got token silently from cached account');
+        } catch(e){ console.warn('[INIT] Silent failed:', e.message); }
+      }
+    }
+  }
+
+  // 3. If we have a session (stored or from MSAL), show the app
+  if(SESSION && (SESSION.name || SESSION.nursery)){
+    document.getElementById('identityModal').classList.remove('active');
+    applySession();
+    if(typeof renderDashboard === 'function') renderDashboard();
+    if(typeof renderMyIssues === 'function') renderMyIssues();
+    return;
+  }
+
+  // 4. No session — show modal with populated picker
+  populateIdentitySelect();
   document.getElementById('identityModal').classList.add('active');
 })();
 
