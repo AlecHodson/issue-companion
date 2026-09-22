@@ -1368,7 +1368,6 @@ function clearIdentity(){
 function applySession(){
   if(!SESSION) return;
   document.getElementById('sessionUserName').textContent = SESSION.name||SESSION.nursery;
-
   document.getElementById('sessionNursery').textContent = SESSION.isHR ? (SESSION.title+' — '+SESSION.nursery) : SESSION.nursery;
   if(SESSION.canViewDashboard){
     document.getElementById('mgmtNavSection').style.display='block';
@@ -1376,6 +1375,14 @@ function applySession(){
   } else {
     document.getElementById('mgmtNavSection').style.display='none';
     document.getElementById('mgmtNavlist').style.display='none';
+  }
+  // Show Connect M365 button — auto-hide after 4s if MSAL already has a token
+  var _m365btn = document.getElementById('connectM365Btn');
+  if(_m365btn){
+    _m365btn.style.display = 'block';
+    setTimeout(function(){
+      if(graphToken && _m365btn) _m365btn.style.display = 'none';
+    }, 4000);
   }
 }
 
