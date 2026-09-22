@@ -1,180 +1,717 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Issue Companion - Sign In Test</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-    .test-box { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; }
-    select { padding: 8px; font-size: 14px; width: 100%; }
-    button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 3px solid #007bff; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
-    .error { border-left-color: #dc3545; color: #dc3545; }
-    .success { border-left-color: #28a745; color: #28a745; }
-  </style>
+<meta charset="UTF-8">
+<title>Issue Companion — Complete Childcare Group</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2321; --paper:#F5EFE2; --paper-2:#EDE4D1;
+  --purple:#3B1F6A; --purple-deep:#2A1450; --purple-mid:#5a2f85; --purple-tint:#EDE8F5;
+  --amber:#B4842C; --amber-tint:#F3E6CC; --amber-bright:#f0a93f;
+  --line:#D8CDB5; --white:#FFFDF8;
+  --green:#2E7D32; --green-bg:#E8F5E9;
+  --amber-urg:#E65100; --amber-urg-bg:#FFF3E0;
+  --orange:#C15A00; --orange-bg:#FBE9DD;
+  --red:#B71C1C; --red-bg:#FFEBEE;
+  --grey:#6b6178; --grey-bg:#F0EDF5;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;} html,body{margin:0;padding:0;}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0;color:var(--purple-deep);}
+a{color:var(--purple);}
+
+/* ===== IDENTITY MODAL ===== */
+#identityModal{position:fixed;inset:0;background:rgba(27,18,40,0.82);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#identityModal.active{display:flex;}
+.id-box{background:var(--white);border-radius:16px;padding:36px 32px;max-width:440px;width:90%;box-shadow:0 24px 60px -10px rgba(27,18,40,0.45);}
+.id-box h2{font-size:22px;margin-bottom:6px;color:var(--purple-deep);}
+.id-box p{font-size:13.5px;color:var(--grey);margin:0 0 20px;line-height:1.55;}
+.id-box select{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:#fff;margin-bottom:10px;}
+.id-box select:focus{outline:2px solid var(--purple-mid);outline-offset:1px;}
+.id-error{display:none;font-size:12.5px;color:var(--red);margin-bottom:10px;}
+.id-btn{width:100%;padding:13px;background:var(--purple-deep);color:#fff;border:none;border-radius:9px;font-family:var(--font-body);font-size:14.5px;font-weight:600;cursor:pointer;}
+.id-btn:hover{background:var(--purple-mid);}
+.id-logo{font-family:var(--font-mono);font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px;}
+
+/* ===== LAYOUT ===== */
+#app{display:flex;min-height:100vh;}
+#sidebar{width:260px;flex-shrink:0;background:var(--purple-deep);color:var(--paper);padding:24px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+#sidebar .brand{margin-bottom:0;}
+#sidebar .brand img{width:100%;max-width:190px;height:auto;display:block;background:#fff;border-radius:6px;padding:6px 10px;}
+#sidebar .brand-sub{font-size:11px;color:#B8A8D0;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:24px;margin-top:6px;}
+#sidebar .who-box{font-size:12px;color:#C4B4DC;margin-bottom:18px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;}
+#sidebar .who-box strong{color:var(--white);display:block;margin-bottom:2px;}
+nav.navlist{display:flex;flex-direction:column;gap:2px;margin-bottom:20px;}
+nav.navlist button{all:unset;cursor:pointer;padding:9px 12px;border-radius:8px;font-size:13.5px;color:#C4B4DC;display:flex;align-items:center;gap:9px;transition:background .12s;}
+nav.navlist button:hover{background:rgba(255,255,255,0.08);color:var(--white);}
+nav.navlist button.active{background:rgba(255,255,255,0.13);color:var(--white);font-weight:600;}
+nav.navlist button .nav-icon{font-size:15px;width:20px;text-align:center;}
+.nav-section{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#8A78A0;margin:14px 0 6px 12px;}
+#sidebar .companion-link{margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);margin-top:20px;}
+#sidebar .companion-link a{font-size:12px;color:#B8A8D0;text-decoration:none;display:flex;align-items:center;gap:6px;}
+#sidebar .companion-link a:hover{color:var(--white);}
+.signout-btn{all:unset;cursor:pointer;font-size:12px;color:#8A78A0;margin-top:12px;display:block;}
+.signout-btn:hover{color:#C4B4DC;}
+.sidebar-copilot-btn{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;
+  background:var(--amber-bright);color:var(--purple-deep);border-radius:10px;padding:12px 14px;
+  font-size:13.5px;font-weight:700;margin:16px 0 4px;box-sizing:border-box;
+  box-shadow:0 2px 8px rgba(240,169,63,0.35);transition:background .15s,transform .1s;}
+.sidebar-copilot-btn:hover{background:#f5b93a;transform:translateY(-1px);}
+.sidebar-copilot-btn .sc-icon{font-size:18px;flex-shrink:0;}
+.sidebar-copilot-btn .sc-label{flex:1;line-height:1.25;}
+.sidebar-copilot-btn .sc-sub{display:block;font-size:10.5px;font-weight:500;opacity:.75;margin-top:1px;}
+
+/* ===== MAIN CONTENT ===== */
+#main{flex:1;overflow-y:auto;min-height:100vh;}
+.page{display:none;padding:36px 40px 80px;}
+.page.active{display:block;}
+
+/* ===== PAGE HEADER ===== */
+.page-header{margin-bottom:32px;}
+.page-eyebrow{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--purple-mid);margin-bottom:8px;}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.reset-btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--grey);border:1.5px solid var(--line);border-radius:8px;padding:7px 13px;white-space:nowrap;transition:all .15s;flex-shrink:0;margin-top:4px;}
+.reset-btn:hover{border-color:var(--purple-mid);color:var(--purple-deep);background:var(--purple-tint);}
+.reset-btn svg{flex-shrink:0;}
+.page-header h1{font-size:clamp(24px,3vw,34px);line-height:1.1;margin-bottom:8px;}
+.page-header p{font-size:14px;color:var(--grey);max-width:600px;margin:0;}
+
+/* ===== CARDS / PANELS ===== */
+.card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:20px;}
+.card-title{font-size:17px;margin-bottom:4px;}
+.card-sub{font-size:13px;color:var(--grey);margin-bottom:20px;}
+
+/* ===== CATEGORY TILES ===== */
+.tiles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;}
+.cat-tile{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:15px 16px 14px;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;}
+.cat-tile:hover{border-color:var(--purple-mid);transform:translateY(-1px);box-shadow:0 6px 18px -10px rgba(58,31,106,.35);}
+.cat-tile.selected{border-color:var(--amber-bright);background:var(--amber-tint);}
+.cat-tile .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;color:var(--purple-mid);text-transform:uppercase;margin-bottom:7px;display:block;}
+.cat-tile h3{font-family:var(--font-body);font-weight:600;font-size:13.5px;margin:0 0 3px;color:var(--ink);}
+.cat-tile p{font-size:12px;color:var(--grey);margin:0;line-height:1.4;}
+
+/* ===== FORM ELEMENTS ===== */
+.field-label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--purple-deep);margin-bottom:8px;}
+textarea.desc-box{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:10px;padding:13px 14px;font-family:var(--font-body);font-size:14px;resize:vertical;color:var(--ink);background:var(--white);}
+textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.char-hint{font-size:11.5px;color:var(--grey);margin-top:4px;}
+
+/* ===== URGENCY PILLS ===== */
+.urgency-row{display:flex;gap:9px;margin:18px 0 22px;flex-wrap:wrap;}
+.urgency-pill{flex:1;min-width:100px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;transition:all .12s;color:var(--grey);}
+.urgency-pill[data-level="low"]:hover,.urgency-pill[data-level="low"].active{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.urgency-pill[data-level="medium"]:hover,.urgency-pill[data-level="medium"].active{border-color:var(--amber-urg);background:var(--amber-urg-bg);color:var(--amber-urg);}
+.urgency-pill[data-level="high"]:hover,.urgency-pill[data-level="high"].active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange);}
+.urgency-pill[data-level="critical"]:hover,.urgency-pill[data-level="critical"].active{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+.urgency-pill .pill-sub{font-size:10.5px;font-weight:400;display:block;margin-top:2px;opacity:.8;}
+
+/* ===== BUTTONS ===== */
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.btn-primary{background:var(--purple-deep);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:background .15s;}
+.btn-primary:hover{background:var(--purple-mid);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-ghost{background:none;border:1.5px solid var(--line);border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;color:var(--grey);font-family:var(--font-body);}
+.btn-ghost:hover{border-color:var(--purple-mid);color:var(--purple-deep);}
+.btn-danger{background:var(--red);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
+.btn-danger:hover{background:#8B0000;}
+.btn-green{background:var(--green);color:#fff;border:none;border-radius:9px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
+.btn-green:hover{background:#1B5E20;}
+
+/* ===== COPILOT RESPONSE ===== */
+.copilot-panel{margin-top:26px;border-top:1.5px dashed var(--line);padding-top:24px;display:none;animation:fadein .3s ease;}
+.copilot-panel.show{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.copilot-badge{display:inline-flex;align-items:center;gap:7px;background:var(--purple-deep);color:var(--amber-bright);font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;padding:6px 12px;border-radius:20px;margin-bottom:16px;}
+.copilot-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--amber-bright);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:.3;}100%{opacity:1;}}
+
+.discrepancy-alert{background:var(--red-bg);border:1px solid #F5C6C6;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#7a1c1c;}
+.discrepancy-alert strong{display:block;margin-bottom:3px;color:var(--red);}
+.discrepancy-alert.amber{background:var(--amber-urg-bg);border-color:#FFCC80;color:#7a3800;}
+.discrepancy-alert.amber strong{color:var(--amber-urg);}
+
+.copilot-block{margin-bottom:18px;}
+.copilot-block h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--purple-mid);margin:0 0 8px;font-weight:700;font-family:var(--font-body);}
+.policy-extract{background:var(--grey-bg);border-left:3px solid var(--purple-mid);padding:12px 15px;font-size:13.5px;line-height:1.55;border-radius:0 8px 8px 0;color:var(--ink);}
+.policy-source{font-size:11.5px;color:var(--grey);margin-top:6px;font-family:var(--font-mono);}
+.steps-list{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--ink);}
+.steps-list li{margin-bottom:3px;}
+
+.decision-row{display:flex;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line);flex-wrap:wrap;}
+.decision-card{flex:1;min-width:220px;border:1.5px solid var(--line);border-radius:12px;padding:16px;}
+.decision-card h5{margin:0 0 5px;font-size:14px;font-weight:700;font-family:var(--font-body);}
+.decision-card p{margin:0 0 12px;font-size:12.5px;color:var(--grey);line-height:1.5;}
+.decision-card.resolve{border-color:var(--green);}
+.decision-card.resolve h5{color:var(--green);}
+.decision-card.escalate{border-color:var(--red);}
+.decision-card.escalate h5{color:var(--red);}
+
+/* ===== CONFIRMATION SCREEN ===== */
+.confirm-screen{display:none;text-align:center;padding:32px 20px;}
+.confirm-screen.show{display:block;}
+.confirm-icon{font-size:52px;margin-bottom:16px;}
+.confirm-screen h2{font-size:22px;margin-bottom:8px;}
+.confirm-screen p{font-size:14px;color:var(--grey);max-width:480px;margin:0 auto 20px;}
+.notified-list{background:var(--grey-bg);border-radius:10px;padding:14px 16px;text-align:left;max-width:400px;margin:0 auto 20px;font-size:13px;}
+.notified-list li{margin-bottom:5px;color:var(--ink);}
+
+/* ===== ISSUE LOG TABLE ===== */
+.log-table{width:100%;border-collapse:collapse;font-size:13px;}
+.log-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--grey);font-weight:600;}
+.log-table td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;}
+.log-table tr:hover td{background:var(--paper-2);}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-mono);}
+.badge-low{background:var(--green-bg);color:var(--green);}
+.badge-medium{background:var(--amber-urg-bg);color:var(--amber-urg);}
+.badge-high{background:var(--orange-bg);color:var(--orange);}
+.badge-critical{background:var(--red-bg);color:var(--red);}
+.badge-open{background:var(--purple-tint);color:var(--purple-mid);}
+.badge-actioned{background:var(--amber-tint);color:var(--amber);}
+.badge-closed{background:var(--green-bg);color:var(--green);}
+.badge-escalated{background:var(--red-bg);color:var(--red);}
+
+/* ===== KPI DASHBOARD ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
+.kpi-card .num{font-family:var(--font-display);font-size:28px;font-weight:600;color:var(--purple-deep);}
+.kpi-card .lbl{font-size:11px;color:var(--grey);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.kpi-card .delta{font-size:11.5px;margin-top:6px;font-weight:600;}
+.delta-up{color:var(--red);}
+.delta-down{color:var(--green);}
+
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.bar-row .lbl{width:170px;font-size:12.5px;color:var(--ink);flex-shrink:0;}
+.bar-track{flex:1;height:9px;background:var(--grey-bg);border-radius:6px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:6px;background:var(--purple-mid);}
+.bar-row .val{width:32px;text-align:right;font-size:12px;color:var(--grey);font-family:var(--font-mono);}
+
+/* ===== SEARCH BAR ===== */
+.search-wrap{position:relative;margin-bottom:16px;}
+.search-wrap input{width:100%;padding:12px 16px 12px 42px;border:1.5px solid var(--line);border-radius:10px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--white);}
+.search-wrap input:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.search-wrap .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--grey);}
+.sr-card{background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.sr-card:hover{border-color:var(--purple-mid);box-shadow:0 4px 14px -6px rgba(58,31,106,.2);}
+.sr-card.sr-best{border-color:var(--amber-bright);background:linear-gradient(135deg,#fffbf0 0%,var(--white) 100%);}
+.sr-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.sr-cat-badge{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;background:var(--purple-deep);color:#fff;white-space:nowrap;flex-shrink:0;}
+.sr-cat-badge.badge-01{background:#7B3F9E;}
+.sr-cat-badge.badge-02{background:#C0392B;}
+.sr-cat-badge.badge-03{background:#E67E22;}
+.sr-cat-badge.badge-04{background:#2E86C1;}
+.sr-cat-badge.badge-05{background:#1E8449;}
+.sr-cat-badge.badge-06{background:#7D6608;}
+.sr-cat-badge.badge-07{background:#922B21;}
+.sr-cat-badge.badge-08{background:#6C3483;}
+.sr-cat-badge.badge-09{background:#555;}
+.sr-title{font-weight:700;font-size:14px;color:var(--ink);flex:1;}
+.sr-tip{font-size:13px;color:#444;line-height:1.55;margin-bottom:8px;}
+.sr-step{font-size:12px;color:var(--purple-deep);background:var(--purple-tint);border-radius:6px;padding:6px 10px;line-height:1.45;}
+.sr-step strong{font-weight:700;}
+.sr-action{font-size:11.5px;font-weight:700;color:var(--purple-mid);margin-top:8px;display:flex;align-items:center;gap:4px;}
+.sr-no-match{background:var(--white);border:1.5px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:10px;}
+.sr-no-match p{margin:0 0 10px;font-size:13.5px;color:var(--grey);}
+.sr-cats{display:flex;flex-wrap:wrap;gap:7px;}
+.sr-cat-pill{font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);cursor:pointer;transition:all .12s;color:var(--ink);}
+.sr-cat-pill:hover{border-color:var(--purple-mid);background:var(--purple-tint);color:var(--purple-deep);}
+
+/* ===== CRITICAL PANIC BUTTON ===== */
+.panic-btn{position:fixed;right:24px;bottom:24px;background:var(--red);color:#fff;border:none;border-radius:30px;padding:14px 20px;font-family:var(--font-body);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px -8px rgba(183,28,28,.55);display:flex;align-items:center;gap:9px;z-index:100;}
+.panic-btn:hover{background:#8B0000;}
+.panic-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
+
+/* ===== NOTICE BOXES ===== */
+.notice{background:var(--purple-tint);border-left:3px solid var(--purple-mid);border-radius:0 8px 8px 0;padding:12px 15px;font-size:13px;color:var(--ink);margin-bottom:16px;}
+.notice.amber{background:var(--amber-tint);border-color:var(--amber);}
+.notice.red{background:var(--red-bg);border-color:var(--red);}
+
+/* ===== ROUTING MATRIX ===== */
+.routing-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.routing-table th{text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--grey);}
+.routing-table td{padding:9px 12px;border-bottom:1px solid var(--line);}
+.routing-table tr:hover td{background:var(--paper-2);}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(27,18,40,0.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.active{display:flex;}
+.modal-box{background:var(--white);border-radius:14px;padding:28px 30px;max-width:520px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 50px -10px rgba(27,18,40,.4);}
+.modal-box h3{margin-bottom:8px;}
+.modal-box p{font-size:13.5px;color:var(--grey);margin-bottom:16px;}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--grey);line-height:1;}
+
+/* ===== RESOLUTION FORM ===== */
+.resolution-form{margin-top:16px;}
+.resolution-form textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--font-body);font-size:13.5px;resize:vertical;}
+.resolution-form textarea:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+
+/* ===== LOADING SPINNER ===== */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:7px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:800px){
+  #sidebar{display:none;}
+  .tiles-grid{grid-template-columns:repeat(2,1fr);}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .page{padding:24px 18px 80px;}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+<style>
+/* ===== ISSUE DETAIL / THREAD VIEW ===== */
+.thread-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.thread-meta{font-size:12.5px;color:var(--grey);margin-top:4px;}
+.thread-meta span{margin-right:14px;}
+.thread-body{background:var(--paper-2);border-radius:10px;padding:16px 18px;font-size:14px;line-height:1.6;margin-bottom:24px;white-space:pre-wrap;}
+.comment-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
+.comment-item{border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;}
+.comment-item.from-mgmt{background:var(--purple-tint);border-left:3px solid var(--purple-mid);}
+.comment-item.from-nursery{background:var(--amber-tint);border-left:3px solid var(--amber);}
+.comment-author{font-weight:700;font-size:12.5px;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.comment-time{font-size:11px;color:var(--grey);font-weight:400;}
+.comment-text{white-space:pre-wrap;}
+.reply-box{margin-top:8px;}
+.reply-box textarea{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-family:var(--font-body);font-size:13.5px;resize:vertical;}
+.reply-box textarea:focus{outline:2px solid var(--purple-mid);outline-offset:1px;border-color:transparent;}
+.status-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:12px 16px;background:var(--paper-2);border-radius:10px;}
+.status-row label{font-size:12.5px;font-weight:600;color:var(--grey);}
+.status-row select{padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;color:var(--ink);background:#fff;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;padding:0;margin-bottom:16px;font-family:var(--font-body);}
+.back-btn:hover{text-decoration:underline;}
+.auth-overlay{position:fixed;inset:0;background:rgba(27,18,40,0.88);z-index:9998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.auth-box{background:var(--white);border-radius:16px;padding:36px 32px;max-width:440px;width:90%;box-shadow:0 24px 60px -10px rgba(27,18,40,0.45);text-align:center;}
+.auth-box h2{margin-bottom:10px;}
+.auth-box p{font-size:13.5px;color:var(--grey);margin-bottom:24px;}
+.auth-btn{padding:13px 28px;background:var(--purple-deep);color:#fff;border:none;border-radius:9px;font-family:var(--font-body);font-size:14.5px;font-weight:600;cursor:pointer;}
+.auth-btn:hover{background:var(--purple-mid);}
+.loading-overlay{position:fixed;inset:0;background:rgba(245,239,226,0.85);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-overlay .spinner{width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--purple-mid);border-radius:50%;animation:spin .7s linear infinite;}
+.loading-overlay p{font-size:14px;color:var(--grey);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--purple-deep);color:#fff;padding:12px 24px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+.issue-row{cursor:pointer;transition:background .1s;}
+.issue-row:hover td{background:var(--purple-tint)!important;}
+</style>
 </head>
 <body>
 
-<script>
-(function(){
-  console.log('[SESSION-CHECK] Checking for stored session...');
+<!-- ===== IDENTITY MODAL ===== -->
+<div id="identityModal" class="active">
+  <div class="id-box">
+    <div class="id-logo" style="margin-bottom:14px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
+    <h2>Issue Companion</h2>
+    <p>Log, triage and resolve operational issues. Select your nursery or role to continue.</p>
+    <select id="idSelect"><option value="">— Select your nursery or name —</option></select>
+    <div class="id-error" id="idError">Please select your nursery or name.</div>
+    <button class="id-btn" onclick="confirmIdentity()">Sign in</button>
+  </div>
+</div>
 
-  try {
-    const session = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+<!-- ===== CRITICAL ESCALATION MODAL ===== -->
+<div class="modal-overlay" id="criticalModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeCriticalModal()">&#x2715;</button>
+    <h3 style="color:var(--red);">&#9888; Critical Escalation</h3>
+    <p>This will open an <strong>email and Teams message</strong> to both Alec Hodson (Group CEO) and Emma McIntyre (CCO). Send them when they open. For all unresolved critical issues with compliance, safeguarding or litigation aspects, Alec Hodson is the final authority. Response target: <strong>within 2 hours.</strong></p>
+    <div class="notice red" style="margin-bottom:20px;">Response target: <strong>within 2 hours.</strong> Use only when there is an immediate risk to children, staff, or regulatory standing.</div>
+    <label class="field-label">Confirm: describe the immediate risk in one sentence</label>
+    <div class="resolution-form">
+      <textarea id="criticalNote" placeholder="e.g. Fire door self-closer failed — room unprotected, engineer not available until tomorrow."></textarea>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-danger" onclick="confirmCriticalEscalation()">Send critical alert now</button>
+      <button class="btn-ghost" onclick="closeCriticalModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 
-    if(!session || !session.name && !session.nursery){
-      console.log('[SESSION-CHECK] No valid session found');
-      console.log('[SESSION-CHECK] Redirecting to sign-in...');
-      window.location.href = '/issue-companion/signin.html';
-      return;
-    }
+<!-- ===== RESOLUTION MODAL ===== -->
+<div class="modal-overlay" id="resolveModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('resolveModal').classList.remove('active')">&#x2715;</button>
+    <h3>Close issue</h3>
+    <p>Add a resolution note before closing. This is required for the audit log.</p>
+    <div class="resolution-form">
+      <textarea id="resolveNote" placeholder="What was done? What was the outcome? Any follow-up required?"></textarea>
+    </div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-green" onclick="confirmResolve()">Close issue</button>
+      <button class="btn-ghost" onclick="document.getElementById('resolveModal').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
 
-    console.log('[SESSION-CHECK] Found session for:', session.name || session.nursery);
-    window.SESSION = session;
+<!-- ===== APP SHELL ===== -->
+<div id="app">
 
-    // Attempt to show dashboard
-    const modal = document.getElementById('identityModal');
-    if(modal){
-      console.log('[SESSION-CHECK] Hiding identity modal');
-      modal.classList.remove('active');
-    }
-
-    // Try to apply session
-    if(typeof applySession === 'function'){
-      console.log('[SESSION-CHECK] Calling applySession()');
-      applySession();
-    } else {
-      console.log('[SESSION-CHECK] applySession not found - waiting for page to load');
-    }
-
-  } catch(e){
-    console.error('[SESSION-CHECK] Error:', e.message);
-  }
-})();
-</script>
-
-
-<script>
-(function(){
-  try {
-    const session = JSON.parse(sessionStorage.getItem('icSession') || 'null');
-    if(!session || !session.nursery && !session.name) {
-      console.log('[CHECK] No session found, redirecting to signin...');
-      window.location.href = '/issue-companion/signin.html';
-      return;
-    }
-    console.log('[CHECK] Session found:', session.name || session.nursery);
-  } catch(e) {
-    console.log('[CHECK] Session check error:', e.message);
-    window.location.href = '/issue-companion/signin.html';
-  }
-})();
-</script>
-
-
-<script>
-(async function(){
-  console.log('[AUTO] Page loaded, attempting auto-signin via Teams...');
-
-  try {
-    // Check if lists are loaded
-    if(typeof NURSERY_LIST === 'undefined' || typeof MGMT_LIST === 'undefined'){
-      console.log('[AUTO] Lists not loaded yet');
-      return;
-    }
-    console.log('[AUTO] Lists loaded:', NURSERY_LIST.length, 'nurseries,', MGMT_LIST.length, 'managers');
-
-    // Try Teams SDK
-    if(typeof microsoftTeams === 'undefined'){
-      console.log('[AUTO] Teams SDK not available');
-      return;
-    }
-
-    console.log('[AUTO] Initializing Teams SDK...');
-    await microsoftTeams.app.initialize();
-    const ctx = await microsoftTeams.app.getContext();
-
-    let email = null;
-    if(ctx && ctx.user && ctx.user.userPrincipalName){
-      email = ctx.user.userPrincipalName;
-      console.log('[AUTO] Got Teams UPN:', email);
-    } else {
-      console.log('[AUTO] No UPN in Teams context');
-      return;
-    }
-
-    // Try to match email
-    const e = email.toLowerCase();
-    let user = null;
-
-    // Check managers
-    for(let u of MGMT_LIST){
-      if((u.email || '').toLowerCase() === e){
-        user = u;
-        console.log('[AUTO] Matched manager:', u.name);
-        break;
-      }
-    }
-
-    // Check nurseries
-    if(!user){
-      for(let u of NURSERY_LIST){
-        if((u.email || '').toLowerCase() === e){
-          user = u;
-          console.log('[AUTO] Matched nursery:', u.nursery);
-          break;
-        }
-      }
-    }
-
-    if(!user){
-      console.log('[AUTO] No user match for:', email);
-      return;
-    }
-
-    // Sign in
-    console.log('[AUTO] AUTO-SIGNING IN:', user.name || user.nursery);
-    window.SESSION = user;
-    try {
-      sessionStorage.setItem('icSession', JSON.stringify(user));
-    } catch(e){}
-
-    // Hide modal and show dashboard
-    const modal = document.getElementById('identityModal');
-    if(modal) modal.classList.remove('active');
-
-    if(typeof applySession === 'function'){
-      applySession();
-    }
-
-  } catch(e){
-    console.log('[AUTO] Error:', e.message);
-  }
-})();
-</script>
-
-  <h1>Issue Companion - Sign In Diagnostic</h1>
-
-  <div class="test-box">
-    <h2>1. Check Data Lists</h2>
-    <div id="listCheck" class="log"></div>
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="brand"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" /></div>
+    <div class="brand-sub">Issue Companion — Operations &amp; Compliance</div>
+    <div class="who-box" id="whoBox">
+      <strong id="sessionUserName">—</strong>
+      <span id="sessionNursery"></span>
+    </div>
+    <div class="nav-section">Main</div>
+    <nav class="navlist" id="navlist">
+      <button class="active" data-page="log" onclick="showPage('log',this)"><span class="nav-icon">&#128221;</span> Log an issue</button>
+      <button data-page="myissues" onclick="showPage('myissues',this)"><span class="nav-icon">&#128203;</span> My issues</button>
+      <button data-page="guidance" onclick="showPage('guidance',this)"><span class="nav-icon">&#128270;</span> Quick guidance</button>
+    </nav>
+    <div class="nav-section" id="mgmtNavSection" style="display:none;">Management</div>
+    <nav class="navlist" id="mgmtNavlist" style="display:none;">
+      <button data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span> Dashboard</button>
+      <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> All issues</button>
+      <button data-page="archived" onclick="showPage('archived',this)"><span class="nav-icon">&#128451;</span> Archived issues</button>
+      <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
+    </nav>
+    <button class="sidebar-copilot-btn" onclick="openCopilotFromSidebar()">
+      <span class="sc-icon">🤖</span>
+      <span class="sc-label">Get Copilot guidance
+        <span class="sc-sub">AI policy &amp; triage assistant</span>
+      </span>
+    </button>
+    <div class="companion-link">
+      <a href="https://alechodson.github.io/hr-companion/" target="_blank" style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(255,255,255,0.08);border-radius:8px;text-decoration:none;color:#C4B4DC;font-size:12.5px;font-weight:600;transition:background .12s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+        <span style="font-size:16px;">🧑‍💼</span>
+        <span>HR Companion</span>
+        <span style="margin-left:auto;font-size:10px;opacity:0.7;">↗</span>
+      </a>
+    </div>
+    <button class="signout-btn" onclick="clearIdentity()">Sign out</button>
   </div>
 
-  <div class="test-box">
-    <h2>2. Populate Dropdown</h2>
-    <select id="testSelect">
-      <option>-- Loading --</option>
-    </select>
-    <div id="populateLog" class="log"></div>
-  </div>
+  <!-- MAIN -->
+  <div id="main">
 
-  <div class="test-box">
-    <h2>3. Sign In</h2>
-    <button onclick="testSignIn()">Test Sign In</button>
-    <div id="signInLog" class="log"></div>
-  </div>
+    <!-- ===== LOG AN ISSUE ===== -->
+    <div class="page active" id="page-log">
+      <div class="page-header">
+        <div class="page-eyebrow">Issue Companion — Operations, Quality &amp; Compliance</div>
+        <div class="page-header-row">
+          <div>
+            <h1>Log it. Get guidance. Escalate only when it matters.</h1>
+            <p>Describe what's happening, rate how urgent it feels, and Copilot checks your rating against policy before deciding where it needs to go.</p>
+          </div>
+          <button class="reset-btn" onclick="resetForm()" title="Clear all entries and start again">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+            Clear &amp; reset
+          </button>
+        </div>
+      </div>
 
-  <script>
-    // Copy the data lists from the main app
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="searchBox" placeholder='Search before logging — e.g. "fire door", "expired DBS", "ratio breach"' oninput="handleSearch(this.value)">
+      </div>
+      <div id="searchResults" style="display:none;margin-bottom:20px;"></div>
+
+      <!-- Category tiles -->
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+        <h2 style="font-size:18px;">Choose a category</h2>
+        <span style="font-size:12px;color:var(--grey);">9 categories</span>
+      </div>
+      <div class="tiles-grid" id="catTiles">
+        <div class="cat-tile" data-cat="01" data-name="Safeguarding — operational" onclick="selectCat(this)"><span class="tag">01</span><h3>Safeguarding — operational</h3><p>Building security, visitor access, site perimeter</p></div>
+        <div class="cat-tile" data-cat="02" data-name="Health &amp; safety" onclick="selectCat(this)"><span class="tag">02</span><h3>Health &amp; safety</h3><p>Accidents, near misses, hazards, fire, food safety</p></div>
+        <div class="cat-tile" data-cat="03" data-name="Ratios &amp; cover" onclick="selectCat(this)"><span class="tag">03</span><h3>Ratios &amp; cover</h3><p>Operational staffing coverage on the day</p></div>
+        <div class="cat-tile" data-cat="04" data-name="Standards &amp; quality" onclick="selectCat(this)"><span class="tag">04</span><h3>Standards &amp; quality</h3><p>Observed practice, EYFS compliance gaps</p></div>
+        <div class="cat-tile" data-cat="05" data-name="Premises &amp; maintenance" onclick="selectCat(this)"><span class="tag">05</span><h3>Premises &amp; maintenance</h3><p>Building defects, equipment failure</p></div>
+        <div class="cat-tile" data-cat="06" data-name="Compliance documentation" onclick="selectCat(this)"><span class="tag">06</span><h3>Compliance documentation</h3><p>Missing DBS checks, expired certifications</p></div>
+        <div class="cat-tile" data-cat="07" data-name="Data protection incident" onclick="selectCat(this)"><span class="tag">07</span><h3>Data protection incident</h3><p>Lost device, misdirected email, access issue</p></div>
+        <div class="cat-tile" data-cat="08" data-name="Complaint — compliance" onclick="selectCat(this)"><span class="tag">08</span><h3>Complaint — compliance</h3><p>Parent or family complaint with a compliance angle</p></div>
+        <div class="cat-tile" data-cat="09" data-name="Other" onclick="selectCat(this)"><span class="tag">09</span><h3>Other</h3><p>Anything that doesn't fit above</p></div>
+      </div>
+
+      <!-- Log form -->
+      <div class="card" id="logCard">
+        <p class="card-title" id="logCardTitle">Log an issue</p>
+        <p class="card-sub" id="logCardSub">Select a category above, then describe what's happening.</p>
+
+        <label class="field-label">What's happening?</label>
+        <textarea class="desc-box" id="descBox" placeholder="Describe the issue in as much detail as you can. The more you give, the better the guidance."></textarea>
+        <div class="char-hint" id="charHint">0 characters</div>
+
+        <label class="field-label" style="margin-top:20px;">How urgent does this feel to you?</label>
+        <div class="urgency-row" id="urgencyRow">
+          <div class="urgency-pill" data-level="low" onclick="selectUrgency(this)">Low<span class="pill-sub">Monitor only</span></div>
+          <div class="urgency-pill" data-level="medium" onclick="selectUrgency(this)">Medium<span class="pill-sub">This week</span></div>
+          <div class="urgency-pill" data-level="high" onclick="selectUrgency(this)">High<span class="pill-sub">24–48 hrs</span></div>
+          <div class="urgency-pill" data-level="critical" onclick="selectUrgency(this)">Critical<span class="pill-sub">Immediate risk</span></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="copilotBtn" onclick="runCopilot()">Get Copilot guidance</button>
+          <button class="btn-ghost" onclick="saveDraft()">Save as draft</button>
+        </div>
+
+        <!-- Copilot response -->
+        <div class="copilot-panel" id="copilotPanel">
+          <div class="copilot-badge"><span class="dot"></span> <span id="copilotBadgeText">COPILOT ASSESSMENT</span></div>
+
+          <div id="discrepancyAlert" style="display:none;"></div>
+
+          <div class="copilot-block">
+            <h4>Relevant policy</h4>
+            <div class="policy-extract" id="policyText"></div>
+            <div class="policy-source" id="policySource"></div>
+          </div>
+
+          <div class="copilot-block">
+            <h4>Sensible first steps</h4>
+            <ol class="steps-list" id="stepsList"></ol>
+            <div id="copilotSources"></div>
+          </div>
+
+          <div class="copilot-block" id="copilotRatingBlock">
+            <h4>Copilot severity assessment</h4>
+            <div id="copilotRatingText" style="font-size:13.5px;color:var(--ink);"></div>
+          </div>
+
+          <div class="decision-row">
+            <div class="decision-card resolve">
+              <h5>&#10003; Actioned, monitoring</h5>
+              <p>Interim steps taken. Keeping this open and logged — no escalation needed right now.</p>
+              <button class="btn-green" onclick="markActioned()">Mark as actioned</button>
+            </div>
+            <div class="decision-card escalate">
+              <h5>&#9650; Escalate this issue</h5>
+              <p id="escalateDesc">Route to the appropriate lead based on category and severity.</p>
+              <button class="btn-danger" id="escalateBtn" onclick="escalateIssue()">Escalate now</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation screen -->
+        <div class="confirm-screen" id="confirmScreen">
+          <div class="confirm-icon" id="confirmIcon">&#10003;</div>
+          <h2 id="confirmTitle">Issue logged</h2>
+          <p id="confirmMsg"></p>
+          <ul class="notified-list" id="notifiedList"></ul>
+          <button class="btn-primary" onclick="resetForm()">Log another issue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MY ISSUES ===== -->
+    <div class="page" id="page-myissues">
+      <div class="page-header">
+        <div class="page-eyebrow">Issue log</div>
+        <h1>My issues</h1>
+        <p>All issues logged from your setting. Click any row to view details or add a resolution note.</p>
+      </div>
+      <div class="card" id="myIssuesCard">
+        <div id="myIssuesContent"></div>
+      </div>
+    </div>
+
+    <!-- ===== QUICK GUIDANCE ===== -->
+    <div class="page" id="page-guidance">
+      <div class="page-header">
+        <div class="page-eyebrow">Reference</div>
+        <h1>Quick guidance</h1>
+        <p>Key contacts, severity indicators, and what to do when Copilot can't find a match.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">When to escalate — at a glance</p>
+        <p class="card-sub">Use this as a quick reference before submitting an issue.</p>
+        <table class="routing-table">
+          <tr><th>Rating</th><th>What it means</th><th>Response target</th><th>Who's notified</th></tr>
+          <tr><td><span class="badge badge-low">Low</span></td><td>No immediate risk. Monitor and review.</td><td>7 days to resolve</td><td>You only (logged)</td></tr>
+          <tr><td><span class="badge badge-medium">Medium</span></td><td>Needs attention this week.</td><td>3 working days</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
+          <tr><td><span class="badge badge-high">High</span></td><td>Needs action within 24–48 hours.</td><td>48 hours</td><td>Area Manager → Emma McIntyre (if unresolved)</td></tr>
+          <tr><td><span class="badge badge-critical">Critical</span></td><td>Immediate risk — children, staff, or regulatory standing.</td><td>2 hours</td><td>Emma McIntyre (CCO) + Alec Hodson — email &amp; Teams</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Critical severity indicators — know these</p>
+        <p class="card-sub">If any of these phrases apply to your situation, the issue is likely Critical.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px;">
+          <div><strong style="color:var(--red);">Health &amp; Safety</strong><br>Fire door failed, gas leak, flood, structural damage, child injured, ambulance, RIDDOR, evacuation, intruder, lock-in/out</div>
+          <div><strong style="color:var(--red);">Safeguarding</strong><br>Child missing, disclosure, allegation against staff, police, social services, LADO, MASH</div>
+          <div><strong style="color:var(--red);">Ratios</strong><br>Ratio breach, below ratio, uncovered room, no qualified staff in room</div>
+          <div><strong style="color:var(--red);">Data Protection</strong><br>Personal data shared externally, lost device with data, misdirected email with personal data, ICO notification required</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Key contacts</p>
+        <table class="routing-table">
+          <tr><th>Role</th><th>Person</th><th>Covers</th></tr>
+          <tr><td>Group CEO / DPO</td><td>Alec Hodson</td><td>Ultimate escalation — all unresolved critical issues with compliance, safeguarding or litigation aspects; Data Protection (DPO); Estates</td></tr>
+          <tr><td>EA to Group CEO</td><td>Louise Medley</td><td>Secondary contact for all escalations — <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></td></tr>
+          <tr><td>Chief Commercial Officer</td><td>Emma McIntyre</td><td>Intermediate escalation for all categories (Tier 3) — receives unresolved issues from Area Managers across all 9 categories</td></tr>
+          <tr><td>Compliance Lead</td><td>Ellie Richards</td><td>Safeguarding, H&amp;S, Standards, Compliance docs</td></tr>
+          <tr><td>Area Manager — BlueWater</td><td>Pav Bilkhu</td><td>Abacus, Bees Knees, Northumberland, Smart Tots, Saltway, Cedars, Boot Farm, Lower Earley, Our Den</td></tr>
+          <tr><td>Area Manager — Greenwood</td><td>Leanne Maynard</td><td>Bramley Wood, Finchampstead, Happitots, Hazebrouck, Kingsclere, Merrydale, Stepping Stones, Woosehill</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <p class="card-title">If Copilot can't find a match</p>
+        <p style="font-size:13.5px;color:var(--ink);">When Copilot flags a <strong>content gap</strong> (no confident policy match), the issue is still logged and you'll be told to contact your Area Manager directly. These gaps are reviewed monthly to update the knowledge base — so your log still helps even if guidance is limited today.</p>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD (management) ===== -->
+    <div class="page" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>Dashboard</h1>
+        <p>Group-wide issue summary. Data updates as issues are logged.</p>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:16px;">Issues by category</p>
+        <div id="barChart"></div>
+      </div>
+      <div class="card">
+        <p class="card-title" style="margin-bottom:16px;">Open critical &amp; high issues</p>
+        <div id="criticalList"></div>
+      </div>
+    </div>
+
+    <!-- ===== ALL ISSUES (management) ===== -->
+    <div class="page" id="page-allissues">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>All issues</h1>
+        <p>Every issue logged across all settings. Filter by severity or status.</p>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="filterSeverity" onchange="renderAllIssues()" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select id="filterStatus" onchange="renderAllIssues()" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:13px;">
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="actioned">Actioned</option>
+            <option value="escalated">Escalated</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <div id="allIssuesContent"></div>
+      </div>
+    </div>
+
+    <!-- ===== ROUTING MATRIX (management) ===== -->
+    <div class="page" id="page-routing">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>Routing matrix</h1>
+        <p>Who receives escalation notifications per category and severity.</p>
+      </div>
+      <div class="card">
+        <div class="notice amber" style="margin-bottom:14px;"><strong>Louise Medley (EA to Group CEO)</strong> is copied as a secondary contact on all escalations across every category. Email: <a href="mailto:louise.medley@completechildcare.co.uk">louise.medley@completechildcare.co.uk</a></div>
+        <table class="routing-table">
+          <tr><th>#</th><th>Category</th><th>Tier 2 — first escalation</th><th>Tier 3 — unresolved (Emma McIntyre)</th><th>Tier 4 — critical/ultimate (Alec Hodson)</th></tr>
+          <tr><td>01</td><td>Safeguarding — operational</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>02</td><td>Health &amp; safety</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>03</td><td>Ratios &amp; cover</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>04</td><td>Standards &amp; quality</td><td>Area Manager + Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>05</td><td>Premises &amp; maintenance</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson (Estates)</td></tr>
+          <tr><td>06</td><td>Compliance documentation</td><td>Ellie Richards</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>07</td><td>Data protection incident</td><td>Alec Hodson (DPO)</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>08</td><td>Complaint — compliance</td><td>Area Manager + Emma McIntyre</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+          <tr><td>09</td><td>Other</td><td>Area Manager</td><td>Emma McIntyre (CCO)</td><td>Alec Hodson</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <p class="card-title">Zone assignment</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;">
+          <div>
+            <strong>BlueWater — Pav Bilkhu</strong>
+            <ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;">
+              <li>Abacus Day Nursery</li><li>Bees Knees Day Nursery</li><li>Northumberland Day Nursery</li>
+              <li>Smart Tots Day Nursery</li><li>Saltway Day Nursery</li><li>Cedars Day Nursery</li>
+              <li>Cedars @ Boot Farm</li><li>Lower Earley Day Nursery</li><li>Our Den @ Hillside</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Greenwood — Leanne Maynard</strong>
+            <ul style="margin:8px 0 0;padding-left:18px;line-height:1.8;">
+              <li>Bramley Wood Day Nursery</li><li>Hazebrouck Day Nursery</li><li>Kingsclere Day Nursery</li>
+              <li>Merrydale Day Nursery</li><li>Stepping Stones Day Nursery</li><li>Happitots Day Nursery</li>
+              <li>Finchampstead Day Nursery</li><li>Woosehill Day Nursery</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ===== ISSUE DETAIL (thread view) ===== -->
+    <div class="page" id="page-issuedetail">
+      <div class="page-header">
+        <button class="back-btn" id="backBtn" onclick="goBack()">&#8592; Back</button>
+        <div class="page-eyebrow" id="detailEyebrow">Issue detail</div>
+        <h1 id="detailTitle">Issue</h1>
+      </div>
+      <div class="card" id="detailCard">
+        <div id="detailContent"><div class="spinner" style="margin:40px auto;display:block;"></div></div>
+      </div>
+    </div>
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Panic button -->
+<button class="panic-btn" id="panicBtn" onclick="triggerCriticalEscalation()"><span class="panic-dot"></span> Critical escalation</button>
+
+
+<div class="auth-overlay" id="authOverlay" style="display:none;">
+  <div class="auth-box">
+    <div style="margin-bottom:18px;"><img src="https://www.completechildcare.co.uk/img/logo.png" alt="Complete Childcare Group" style="width:160px;height:auto;" /></div>
+    <h2>Sign in required</h2>
+    <p>Sign in with your Complete Childcare Microsoft 365 account to use the Issue Companion.</p>
+    <button class="auth-btn" onclick="msalSignIn()">Connect to Microsoft 365</button>
+    <p style="font-size:11.5px;color:#aaa;margin-top:12px;">Required to load and save issues from your organisation's SharePoint.</p>
+    <div id="authError" style="display:none;margin-top:14px;font-size:12.5px;color:var(--red);"></div>
+  </div>
+</div>
+<div class="loading-overlay" id="loadingOverlay" style="display:none;">
+  <div class="spinner"></div>
+  <p id="loadingMsg">Loading...</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   CONFIG
+   ================================================================ */
+const MSAL_CONFIG = {
+  auth: {
+    clientId: 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a',
+    authority: 'https://login.microsoftonline.com/c498c1f7-99ac-42e6-bd6f-e819bf40f167',
+    redirectUri: window.location.href.split('?')[0].split('#')[0]
+  },
+  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+};
+const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.All', 'Mail.Send'];
+const DRIVE_ID = 'b!iJr5xECL0UOQJ9Tvhe9ldRBI2wy_aKhHrZwoRpGOclMsrpjKrYXdToViItPPv4Fn';
+const ISSUES_PATH = 'IssueCompanion/issues';
+const COMMENTS_PATH = 'IssueCompanion/comments';
+
+/* ================================================================
+   DATA — USERS
+   ================================================================ */
 const NURSERY_LIST = [
   {name:"Abacus Day Nursery",nursery:"Abacus Day Nursery",zone:"BlueWater",isHR:false,email:"abacus@completechildcare.co.uk"},
   {name:"Bees Knees Day Nursery",nursery:"Bees Knees Day Nursery",zone:"BlueWater",isHR:false,email:"beesknees@completechildcare.co.uk"},
@@ -194,7 +731,6 @@ const NURSERY_LIST = [
   {name:"Finchampstead Day Nursery",nursery:"Finchampstead Day Nursery",zone:"Greenwood",isHR:false,email:"finchampstead@completechildcare.co.uk"},
   {name:"Woosehill Day Nursery",nursery:"Woosehill Day Nursery",zone:"Greenwood",isHR:false,email:"woosehill@completechildcare.co.uk"},
 ];
-
 const MGMT_LIST = [
   {name:"Pav Bilkhu",nursery:"BlueWater Area",title:"Area Manager",isHR:true,canViewDashboard:true,zone:"BlueWater",email:"pav.bilkhu@completechildcare.co.uk"},
   {name:"Leanne Maynard",nursery:"Greenwood Area",title:"Area Manager",isHR:true,canViewDashboard:true,zone:"Greenwood",email:"Leanne.Maynard@completechildcare.co.uk"},
@@ -203,141 +739,619 @@ const MGMT_LIST = [
   {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,canViewDashboard:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
   {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,canViewDashboard:true,zone:"all",email:"louise.medley@completechildcare.co.uk"},
 ];
+// ─── SOURCE CITATION HELPER ──────────────────────────────────────────────────
+function sourcesPanel(sources) {
+  const icons = { ccg:'📄', acas:'⚖️', gov:'🏛️' };
+  const colours = { ccg:'var(--purple-tint)', acas:'var(--amber-tint)', gov:'#EAF0FB' };
+  const textCol = { ccg:'var(--purple-deep)', acas:'#7A5A1A', gov:'#1a3a6a' };
+  let rows = sources.map(s => {
+    const ic2 = icons[s.type] || '🔗';
+    const bg = colours[s.type] || '#f5f5f5';
+    const tc = textCol[s.type] || '#333';
+    return `<a href="${s.url}" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:8px;padding:7px 10px;
+             background:${bg};border-radius:6px;text-decoration:none;
+             color:${tc};font-size:12px;font-weight:600;border:1px solid rgba(0,0,0,0.07);
+             transition:opacity .15s;" onmouseover="this.style.opacity='.75'"
+             onmouseout="this.style.opacity='1'">
+      <span>${ic2}</span>
+      <span style="flex:1;">${s.label}</span>
+      <span style="font-size:10px;opacity:.6;">↗</span>
+    </a>`;
+  }).join('');
+  return `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line);">
+    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+                color:#888;margin-bottom:7px;font-family:var(--font-mono);">
+      Sources consulted
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
+  </div>`;
+}
 
-    function log(elementId, message, isError = false) {
-      const el = document.getElementById(elementId);
-      const line = document.createElement('div');
-      line.textContent = message;
-      if(isError) line.className = 'error';
-      else line.className = 'success';
-      el.appendChild(line);
-      console.log(message);
+const COPILOT_KB = {
+  "01": {
+    policy: "All visitors must be signed in and out using the visitor log. External contractors must produce ID and be accompanied by a member of staff at all times. Building perimeter security checks must be completed at the start and end of each session. Any unauthorised person on site must be treated as an immediate safeguarding concern.",
+    source: "CCG Safeguarding Policy — Visitor Access and Site Security, Section 3.1",
+    steps: [
+      "Secure the building perimeter immediately if there is an active security concern.",
+      "Do not confront an unauthorised person alone — contact a colleague and call 999 if necessary.",
+      "Complete the visitor log and note any anomalies with times and descriptions.",
+      "Review your CCTV footage if available and retain it.",
+      "Notify your Area Manager and Ellie Richards (Compliance) of any breach today."
+    ],
+    criticalKeywords: ["child missing","intruder","unauthorised adult","lock-in","lock-out","police"],
+    highKeywords: ["visitor unsigned","access breach","gate left open","door unsecured","contractor unaccompanied"],
+    sources: [{label:'CCG Employee Handbook — Safeguarding', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'Gov.uk: DBS checks', url:'https://www.gov.uk/dbs-check-applicant-criminal-record', type:'gov'}, {label:'Ofsted: Inspecting safeguarding in early years', url:'https://www.gov.uk/government/publications/inspecting-safeguarding-in-early-years-education-and-skills', type:'gov'}, {label:'NSPCC: Safer recruitment', url:'https://learning.nspcc.org.uk/safeguarding-child-protection/safer-recruitment', type:'gov'}, {label:'Lullaby Trust: Safer sleep advice', url:'https://www.lullabytrust.org.uk/safer-sleep-advice/', type:'gov'}, {label:'Lullaby Trust: Safer sleep for professionals', url:'https://www.lullabytrust.org.uk/professionals/', type:'gov'}, {label:'UKHSA: Notifiable diseases', url:'https://www.gov.uk/guidance/notifiable-diseases-and-causative-organisms-how-to-report', type:'gov'}]
+  },
+  "02": {
+    policy: "All accidents, near misses, and hazards must be recorded in the accident/incident log on the day they occur. Fire doors must be maintained in self-closing order at all times — any failure is an immediate hazard requiring interim control. RIDDOR-reportable incidents (specified injuries, over-7-day incapacitation, dangerous occurrences) must be reported to the HSE within the required timeframe.",
+    source: "CCG Health & Safety Policy — Accident Reporting and Fire Safety, Sections 2.1 and 4.2",
+    steps: [
+      "Ensure the immediate area is safe and any injured person receives appropriate first aid.",
+      "Record the incident in the accident/incident log with full details — time, location, people involved, witnesses.",
+      "Photograph any hazard or defect before it is made safe, for the record.",
+      "Implement an interim control immediately (e.g. close the room, assign a staff member to monitor).",
+      "Assess whether this is RIDDOR-reportable and notify Alec Hodson if in any doubt."
+    ],
+    criticalKeywords: ["fire door","fire alarm","gas leak","flood","structural damage","child injured","ambulance","hospital","RIDDOR","evacuation","intruder","lock-in","lock-out","medication error","allergy","anaphylaxis"],
+    highKeywords: ["broken equipment","hazard","near miss","pest","food contamination","damp","mould","trip","slip"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'Gov.uk: Report an accident (RIDDOR)', url:'https://www.gov.uk/report-an-accident-at-work', type:'gov'}, {label:'Lullaby Trust: Safer sleep advice', url:'https://www.lullabytrust.org.uk/safer-sleep-advice/', type:'gov'}, {label:'Lullaby Trust: Safer sleep for professionals', url:'https://www.lullabytrust.org.uk/professionals/', type:'gov'}, {label:'Ofsted: Inspecting safeguarding in early years', url:'https://www.gov.uk/government/publications/inspecting-safeguarding-in-early-years-education-and-skills', type:'gov'}, {label:'HSE: RIDDOR', url:'https://www.hse.gov.uk/riddor/', type:'gov'}, {label:'HSE: First aid at work', url:'https://www.hse.gov.uk/firstaid/', type:'gov'}, {label:'HSE: Gas safety', url:'https://www.hse.gov.uk/gas/', type:'gov'}, {label:'National Gas Emergency (0800 111 999)', url:'https://www.nationalgas.com/safety-and-emergencies/', type:'gov'}, {label:'HSE: Electrical safety', url:'https://www.hse.gov.uk/electricity/', type:'gov'}, {label:'HSE: Slips and trips', url:'https://www.hse.gov.uk/slips/', type:'gov'}, {label:'HSE: Food safety', url:'https://www.hse.gov.uk/food/', type:'gov'}, {label:'NHS: Food poisoning', url:'https://www.nhs.uk/conditions/food-poisoning/', type:'gov'}, {label:'NHS: Norovirus', url:'https://www.nhs.uk/conditions/norovirus/', type:'gov'}, {label:'Met Office: Live weather warnings', url:'https://www.metoffice.gov.uk/weather/warnings-and-advice/uk-warnings', type:'gov'}, {label:'Gov.uk: Check flood risk', url:'https://www.gov.uk/check-flood-risk', type:'gov'}, {label:'UKHSA: Cold weather plan', url:'https://www.gov.uk/government/publications/cold-weather-plan-for-england', type:'gov'}, {label:'WHO: Health emergencies', url:'https://www.who.int/emergencies/en/', type:'gov'}]
+  },
+  "03": {
+    policy: "Minimum staffing ratios must be maintained at all times: 1:3 for children under 2, 1:5 for 2-year-olds, 1:8 for 3–5 year-olds. A breach of ratio is a regulatory non-compliance and must be corrected immediately. Emergency cover procedures must be activated if a ratio breach cannot be resolved within 15 minutes.",
+    source: "CCG Staffing Ratio Policy and EYFS Statutory Framework (2024), Section 3.29–3.38",
+    steps: [
+      "Identify which room(s) are affected and the current ratio in each.",
+      "Immediately move available qualified staff to cover the affected room.",
+      "Contact your Area Manager now — do not wait to see if it resolves itself.",
+      "Do not accept children into a room that is below ratio until cover is in place.",
+      "Document the breach, the time it occurred, the duration, and how it was resolved."
+    ],
+    criticalKeywords: ["ratio breach","below ratio","uncovered room","no qualified staff","no first aider","room closed","children unsupervised"],
+    highKeywords: ["short staffed","cover needed","ratio at risk","no spare cover","agency needed"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework — Ratios', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}]
+  },
+  "04": {
+    policy: "Settings must deliver the EYFS Statutory Framework at all times. Observed practice that falls below the expected standard must be addressed promptly through coaching, supervision, and where necessary formal performance management. Self-evaluation should be ongoing and documented. Any concern that a setting's practice poses a risk to children's welfare must be escalated to the Area Manager immediately.",
+    source: "EYFS Statutory Framework (Sept 2024) and CCG Quality Standards Policy",
+    steps: [
+      "Document the specific practice concern with dates, times, and what was observed.",
+      "Speak to the member of staff involved in a supportive, non-confrontational way and note the conversation.",
+      "Review your most recent self-evaluation and identify whether this is an isolated concern or a pattern.",
+      "Agree an improvement action with the staff member and set a review date.",
+      "Notify your Area Manager if the concern relates to child welfare or repeated non-compliance."
+    ],
+    criticalKeywords: ["child at risk","welfare concern","unsafe practice","Ofsted notifiable","immediate risk","harm"],
+    highKeywords: ["practice concern","EYFS gap","repeated issue","non-compliance","observation concern"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'ACAS: Performance management', url:'https://www.acas.org.uk/performance-management', type:'acas'}, {label:'Ofsted: Inspecting safeguarding in early years', url:'https://www.gov.uk/government/publications/inspecting-safeguarding-in-early-years-education-and-skills', type:'gov'}]
+  },
+  "05": {
+    policy: "All premises defects must be reported to the maintenance log on the day they are identified. Any defect that creates an immediate risk (structural, electrical, water ingress, heating failure in winter) must be treated as urgent and reported to the Estates lead (Alec Hodson) the same day. Contractors must be managed in line with the Contractor Management Policy — ID checked, induction completed, work supervised.",
+    source: "CCG Premises and Maintenance Procedure, Section 2.1",
+    steps: [
+      "Log the defect in the premises maintenance record with a photograph if possible.",
+      "Assess whether the defect creates an immediate risk — if yes, close the affected area immediately.",
+      "Contact your maintenance contractor for an urgent callout if the risk is immediate.",
+      "Notify your Area Manager and Alec Hodson (Estates) if the issue cannot be made safe today.",
+      "Do not allow children or staff into an area that cannot be made safe."
+    ],
+    criticalKeywords: ["structural damage","ceiling collapse","gas leak","flood","electrical fault","heating failure","boiler","no hot water in winter","fire door"],
+    highKeywords: ["broken equipment","leak","damp","mould","pest","door not locking","window broken","playground hazard"],
+    sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework — Premises', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'HSE: Gas safety', url:'https://www.hse.gov.uk/gas/', type:'gov'}, {label:'HSE: Gas domestic emergencies', url:'https://www.hse.gov.uk/gas/domestic/', type:'gov'}, {label:'National Gas Emergency (0800 111 999)', url:'https://www.nationalgas.com/safety-and-emergencies/', type:'gov'}, {label:'HSE: Electrical safety', url:'https://www.hse.gov.uk/electricity/', type:'gov'}, {label:'HSE: Legionella and water safety', url:'https://www.hse.gov.uk/legionnaires/', type:'gov'}, {label:'HSE: Asbestos', url:'https://www.hse.gov.uk/asbestos/', type:'gov'}, {label:'Met Office: Live weather warnings', url:'https://www.metoffice.gov.uk/weather/warnings-and-advice/uk-warnings', type:'gov'}, {label:'Gov.uk: Check flood risk', url:'https://www.gov.uk/check-flood-risk', type:'gov'}, {label:'Gov.uk: Sign up for flood warnings', url:'https://www.gov.uk/sign-up-for-flood-warnings', type:'gov'}]
+  },
+  "06": {
+    policy: "All staff must have a valid enhanced DBS check on the Disclosure and Barring Service Update Service before starting work with children. DBS certificates must be reviewed annually. Paediatric First Aid qualifications must be renewed every 3 years. Any lapse in a required certification must be flagged to the HR team and the staff member must not work unsupervised with children until the certification is renewed.",
+    source: "CCG DBS Check Policy and Certification Register Procedure",
+    steps: [
+      "Identify the staff member(s) affected and the specific certification(s) that have lapsed or are missing.",
+      "Immediately arrange for the staff member to be supervised at all times if their DBS or PFA has lapsed.",
+      "Contact HR (Ellie Richards) today to initiate the renewal process.",
+      "Do not allow unsupervised contact with children until the issue is resolved.",
+      "Document the lapse, the date identified, and the steps taken in the compliance register."
+    ],
+    criticalKeywords: ["no DBS","DBS expired","DBS lapsed","working without DBS","no first aider","PFA expired","safeguarding training lapsed"],
+    highKeywords: ["DBS overdue","certificate expiring","renewal needed","compliance gap","training lapsed"],
+    sources: [{label:'CCG Employee Handbook — DBS & Certification', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'Gov.uk: DBS checks', url:'https://www.gov.uk/dbs-check-applicant-criminal-record', type:'gov'}, {label:'Gov.uk: Right to work checks', url:'https://www.gov.uk/check-job-applicant-right-to-work', type:'gov'}, {label:'NSPCC: Safer recruitment', url:'https://learning.nspcc.org.uk/safeguarding-child-protection/safer-recruitment', type:'gov'}, {label:'Ofsted: Safeguarding policy', url:'https://www.gov.uk/government/publications/ofsted-safeguarding-policy', type:'gov'}, {label:'Gov.uk: Disqualification under Childcare Act 2006', url:'https://www.gov.uk/government/publications/disqualification-under-the-childcare-act-2006/disqualification-under-the-childcare-act-2006', type:'gov'}]
+  },
+  "07": {
+    policy: "Any personal data incident — including lost devices, misdirected emails containing personal data, or unauthorised access to records — must be reported to the Data Protection Officer (Alec Hodson) within 24 hours of discovery. The DPO will assess whether the incident must be reported to the ICO within 72 hours of the organisation becoming aware. Do not attempt to recover a lost device yourself — contact IT support immediately.",
+    source: "CCG Data Protection Policy — Breach Notification Procedure, Section 5",
+    steps: [
+      "Stop any ongoing breach immediately — if a device is lost, report to IT to enable remote wipe.",
+      "Do not attempt to contact the unintended recipient of a misdirected email yourself — this can make things worse.",
+      "Notify Alec Hodson (DPO) immediately — do not wait until the end of the day.",
+      "Write down everything you know: what data was involved, how many people affected, when it happened.",
+      "Alec Hodson will assess whether ICO notification is required within 72 hours."
+    ],
+    criticalKeywords: ["data breach","personal data shared","lost device","misdirected email","ICO","unauthorised access","data lost","GDPR breach"],
+    highKeywords: ["email sent wrong","device missing","access issue","file shared incorrectly","data concern"],
+    sources: [{label:'CCG Employee Handbook — Data Protection', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: Data Protection Act 2018', url:'https://www.legislation.gov.uk/ukpga/2018/12/contents', type:'gov'}, {label:'ICO: Report a breach', url:'https://ico.org.uk/for-organisations/report-a-breach/', type:'gov'}]
+  },
+  "08": {
+    policy: "All complaints with a compliance dimension must be logged in the complaints register on the day they are received. The manager must acknowledge the complaint in writing within 2 working days. If the complaint relates to child welfare, safeguarding, or a potential Ofsted-notifiable event, it must be escalated to the Area Manager and Emma McIntyre (CCO) immediately. Parents have the right to escalate unresolved complaints directly to Ofsted.",
+    source: "CCG Complaints Policy and Ofsted Notification Triggers Guidance",
+    steps: [
+      "Log the complaint in the complaints register with full details — date, parent name, nature of complaint.",
+      "Acknowledge receipt to the parent in writing within 2 working days.",
+      "Assess whether the complaint relates to child welfare or a potential Ofsted-notifiable event — if yes, escalate now.",
+      "Notify your Area Manager and Emma McIntyre (CCO) if the complaint is serious or complex.",
+      "Do not make any admission of liability or offer of compensation without approval from senior management."
+    ],
+    criticalKeywords: ["Ofsted complaint","regulatory complaint","child welfare complaint","safeguarding complaint","formal complaint","legal action"],
+    highKeywords: ["parent complaint","formal complaint","written complaint","serious concern","complaint escalated"],
+    sources: [{label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'ACAS: Discipline & grievance hub', url:'https://www.acas.org.uk/discipline-and-grievance', type:'acas'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}]
+  },
+  "09": {
+    policy: "If your issue does not fit any of the categories above, log it here and your Area Manager will review it and route it to the right person. Provide as much detail as possible so the issue can be correctly categorised and actioned.",
+    source: "CCG General Escalation Guidance",
+    steps: [
+      "Describe the issue in as much detail as possible.",
+      "Note any immediate risks or actions you have already taken.",
+      "Your Area Manager will review this and contact you within 3 working days.",
+      "If you believe there is an immediate risk, use the Critical escalation button instead."
+    ],
+    criticalKeywords: ["immediate risk","urgent","emergency","child at risk","staff at risk"],
+    highKeywords: ["urgent","serious","significant","cannot wait"],
+    sources: [{label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'ACAS: Discipline & grievance hub', url:'https://www.acas.org.uk/discipline-and-grievance', type:'acas'}, {label:'Gov.uk: Employment rights', url:'https://www.gov.uk/browse/working/rights-trade-unions', type:'gov'}]
+  }
+};
+
+const ROUTING = {
+  "01": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "05": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson (Estates)"},
+  "06": {tier2:"Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "07": {tier2:"Alec Hodson (DPO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
+  "09": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"}
+};
+
+const ZONE_AM = {BlueWater:"Pav Bilkhu",Greenwood:"Leanne Maynard"};
+
+const SEARCH_KB = [
+  // ── 01 SAFEGUARDING ───────────────────────────────────────────────────────
+  {keywords:['safeguard','safeguarding','child','missing','intruder','visitor','access','gate','perimeter','lock','locked','security','lado','allegation','abuse','disclosure','concern','protect','dsl','designated'],
+   cat:'01',title:'Safeguarding — operational',
+   tip:'Any safeguarding concern must go to your Designated Safeguarding Lead (DSL) immediately. Do not investigate yourself.',
+   step:'Secure the area. Contact your DSL now. Do not speak to the subject of any allegation before the LADO is informed.'},
+  // ── 02 HEALTH & SAFETY ────────────────────────────────────────────────────
+  {keywords:['fire','alarm','door','evacuation','accident','injury','injured','hurt','hospital','ambulance','riddor','near miss','hazard','risk','slip','trip','fall','food','allergy','anaphylaxis','medication','epipen','gas','leak','flood','water','electrical','boiler','heating','pest','vermin','rat','mouse','first aid','first aider','burn','scald','choking','head','blood'],
+   cat:'02',title:'Health & safety',
+   tip:'All accidents, near misses and hazards must be recorded in the accident/incident log on the day they occur.',
+   step:'Ensure the immediate area is safe and any injured person receives first aid. Photograph any hazard before making it safe.'},
+  // ── 03 RATIOS & COVER ─────────────────────────────────────────────────────
+  {keywords:['ratio','ratios','cover','staff','staffing','short','short-staffed','understaffed','room','qualified','level 3','level3','1:3','1:4','1:5','1:8','agency','bank','absent','off sick','no cover','uncovered','children','supervision','unsupervised'],
+   cat:'03',title:'Ratios & cover',
+   tip:'Minimum staffing ratios must be maintained at all times. A breach is a regulatory non-compliance and must be corrected immediately.',
+   step:'Identify affected rooms. Move available qualified staff immediately. Contact your Area Manager now — do not wait.'},
+  // ── 04 STANDARDS & QUALITY ────────────────────────────────────────────────
+  {keywords:['standard','quality','eyfs','practice','observation','observed','ofsted','inspection','learning','development','curriculum','behaviour','conduct','practitioner','poor practice','concern','non-compliance','self-evaluation','improvement','cpd','training','supervision'],
+   cat:'04',title:'Standards & quality',
+   tip:'Observed practice that falls below the expected standard must be addressed promptly through coaching and supervision.',
+   step:'Document the specific concern with dates, times and what was observed. Speak to the staff member supportively and note the conversation.'},
+  // ── 05 PREMISES & MAINTENANCE ─────────────────────────────────────────────
+  {keywords:['premises','maintenance','building','repair','broken','damage','damaged','defect','leak','roof','ceiling','wall','window','door','lock','playground','equipment','fence','gate','contractor','boiler','heating','hot water','cold water','damp','mould','mold','pest','structural','electrical','wiring','plumbing','toilet','bathroom','kitchen'],
+   cat:'05',title:'Premises & maintenance',
+   tip:'All premises defects must be reported to the maintenance log on the day they are identified.',
+   step:'Log the defect with a photograph. Assess immediate risk — if unsafe, close the affected area. Contact your Area Manager if it cannot be made safe today.'},
+  // ── 06 COMPLIANCE DOCUMENTATION ───────────────────────────────────────────
+  {keywords:['dbs','disclosure','barring','check','certificate','expired','expiry','lapsed','overdue','renewal','qualification','level 2','level 3','paediatric','first aid','pfa','safeguarding training','right to work','document','compliance','register','record','missing','incomplete','induction'],
+   cat:'06',title:'Compliance documentation',
+   tip:'Staff with an expired DBS or lapsed certification must not work unsupervised with children until renewed.',
+   step:'Identify the staff member and lapsed certification. Arrange supervised-only working immediately. Contact Ellie Richards (Compliance) today to initiate renewal.'},
+  // ── 07 DATA PROTECTION ────────────────────────────────────────────────────
+  {keywords:['data','gdpr','personal','information','email','sent wrong','misdirected','lost','device','phone','laptop','tablet','usb','breach','access','unauthorised','shared','file','document','record','ico','dpo','privacy','confidential','confidentiality'],
+   cat:'07',title:'Data protection incident',
+   tip:'Any personal data incident must be reported to the DPO (Alec Hodson) within 24 hours. The ICO may need to be informed within 72 hours.',
+   step:'Stop any ongoing breach immediately. Do not contact the unintended recipient. Notify Alec Hodson (DPO) now — do not wait until end of day.'},
+  // ── 08 COMPLAINT — COMPLIANCE ─────────────────────────────────────────────
+  {keywords:['complaint','complain','parent','family','unhappy','upset','formal','written','ofsted','regulatory','welfare','safeguarding complaint','legal','solicitor','media','press','social media','allegation','compensation','liability'],
+   cat:'08',title:'Complaint — compliance',
+   tip:'All complaints with a compliance dimension must be logged in the complaints register on the day they are received.',
+   step:'Log the complaint with full details. Acknowledge receipt in writing within 2 working days. Notify your Area Manager and Emma McIntyre (CCO) if it is serious or complex.'},
+  // ── 09 OTHER ──────────────────────────────────────────────────────────────
+  {keywords:['other','general','unsure','not sure','help','urgent','serious','significant','issue','problem','concern','incident'],
+   cat:'09',title:'Other',
+   tip:'If your issue does not fit any category, log it here and your Area Manager will review and route it correctly.',
+   step:'Describe the issue in as much detail as possible. Note any immediate risks or actions already taken.'},
+];
+
+const CAT_NAMES = {
+  '01':'Safeguarding — operational','02':'Health & safety','03':'Ratios & cover',
+  '04':'Standards & quality','05':'Premises & maintenance','06':'Compliance documentation',
+  '07':'Data protection incident','08':'Complaint — compliance','09':'Other'
+};
+
+function scoreSearch(v, entry){
+  // Score = number of keywords matched, weighted by position in query
+  const words = v.split(/\s+/).filter(w=>w.length>2);
+  let score = 0;
+  for(const kw of entry.keywords){
+    if(v.includes(kw)) score += 3;           // full phrase match
+    else for(const w of words){
+      if(kw.includes(w) || w.includes(kw.split(' ')[0])) score += 1; // word match
     }
+  }
+  return score;
+}
 
-    // Test 1: Check lists
-    window.addEventListener('load', function() {
-      log('listCheck', '[✓] Page loaded');
-      log('listCheck', '[✓] NURSERY_LIST.length = ' + NURSERY_LIST.length);
-      log('listCheck', '[✓] MGMT_LIST.length = ' + MGMT_LIST.length);
+function handleSearch(val){
+  const v = val.trim().toLowerCase();
+  const el = document.getElementById('searchResults');
+  if(v.length < 2){ el.style.display='none'; return; }
 
-      if(NURSERY_LIST.length === 0) {
-        log('listCheck', '[✗] NURSERY_LIST is empty!', true);
-      }
-      if(MGMT_LIST.length === 0) {
-        log('listCheck', '[✗] MGMT_LIST is empty!', true);
-      }
+  // Score every KB entry
+  const scored = SEARCH_KB.map(e=>({...e, score:scoreSearch(v,e)}))
+                           .filter(e=>e.score>0)
+                           .sort((a,b)=>b.score-a.score);
 
-      // Test 2: Populate dropdown
-      populateDropdown();
+  el.style.display = 'block';
+
+  if(scored.length === 0){
+    // No match — show all categories as pills so user can still pick quickly
+    el.innerHTML = `<div class="sr-no-match">
+      <p>No exact match found for <strong>"${val.trim()}"</strong> — select the most relevant category below, or describe your issue in more detail.</p>
+      <div class="sr-cats">${SEARCH_KB.slice(0,8).map(e=>`
+        <div class="sr-cat-pill" onclick="applySearchHint('${e.cat}')">${e.title}</div>`).join('')}
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Show top 3 matches as rich cards
+  const top = scored.slice(0,3);
+  el.innerHTML = top.map((m,i)=>`
+    <div class="sr-card${i===0?' sr-best':''}" onclick="applySearchHint('${m.cat}')">
+      <div class="sr-header">
+        <span class="sr-cat-badge badge-0${m.cat.slice(-1)}">${m.cat} — ${CAT_NAMES[m.cat]}</span>
+        ${i===0?'<span style="font-size:11px;font-weight:700;color:var(--amber);margin-left:auto;">Best match</span>':''}
+      </div>
+      <div class="sr-tip">${m.tip}</div>
+      <div class="sr-step"><strong>First step:</strong> ${m.step}</div>
+      <div class="sr-action">Tap to select this category &#8594;</div>
+    </div>`).join('');
+}
+
+function applySearchHint(catId){
+  document.getElementById('searchBox').value='';
+  document.getElementById('searchResults').style.display='none';
+  const tile=document.querySelector(`.cat-tile[data-cat="${catId}"]`);
+  if(tile){selectCat(tile);tile.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
+/* ================================================================
+   MSAL AUTH + GRAPH HELPERS
+   ================================================================ */
+// Initialise MSAL synchronously so it is always available
+var msalInstance = null;
+(function tryInitMSAL(){
+  if(typeof msal === 'undefined' || !msal.PublicClientApplication){
+    // Library not loaded yet - retry in 100ms
+    setTimeout(tryInitMSAL, 100);
+    return;
+  }
+  try {
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    msalInstance.initialize();
+  } catch(e) {
+    console.error('MSAL init failed:', e);
+  }
+})();
+var graphToken = null;
+var tokenExpiry = 0;
+var SESSION = null;
+var previousPage = 'log';
+
+function initMSAL(){
+  // Already initialised synchronously at startup
+  return Promise.resolve();
+}
+
+async function getGraphToken(){
+  if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
+  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(!accounts.length) return null;
+  try {
+    const resp = await msalInstance.acquireTokenSilent({
+      scopes: GRAPH_SCOPES,
+      account: accounts[0]
     });
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    return graphToken;
+  } catch(e) {
+    graphToken = null;
+    return null;
+  }
+}
 
-    function populateDropdown() {
-      log('populateLog', '[✓] Starting populate');
-
-      const sel = document.getElementById('testSelect');
-      if(!sel) {
-        log('populateLog', '[✗] Select element not found!', true);
-        return;
-      }
-      log('populateLog', '[✓] Select element found');
-
-      sel.innerHTML = '<option value="">-- Select nursery or name --</option>';
-
-      const ng = document.createElement('optgroup');
-      ng.label = 'Nurseries';
-      NURSERY_LIST.forEach((u, i) => {
-        const o = document.createElement('option');
-        o.value = 'n:' + i;
-        o.textContent = u.nursery;
-        ng.appendChild(o);
-      });
-      sel.appendChild(ng);
-      log('populateLog', '[✓] Added ' + NURSERY_LIST.length + ' nurseries');
-
-      const mg = document.createElement('optgroup');
-      mg.label = 'Management & Head Office';
-      MGMT_LIST.forEach((u, i) => {
-        const o = document.createElement('option');
-        o.value = 'm:' + i;
-        o.textContent = u.name + ' — ' + u.title;
-        mg.appendChild(o);
-      });
-      sel.appendChild(mg);
-      log('populateLog', '[✓] Added ' + MGMT_LIST.length + ' management users');
-      log('populateLog', '[✓] Total options: ' + sel.options.length);
+async function graphFetch(method, path, body){
+  const token = await getGraphToken();
+  if(!token) throw new Error('Not authenticated');
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
     }
+  };
+  if(body !== undefined) opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+  const resp = await fetch('https://graph.microsoft.com/v1.0' + path, opts);
+  if(resp.status === 204) return null;
+  const text = await resp.text();
+  if(!text) return null;
+  try { return JSON.parse(text); } catch(e) { return text; }
+}
 
-    function testSignIn() {
-      const sel = document.getElementById('testSelect');
-      const val = sel.value;
-
-      if(!val) {
-        log('signInLog', '[✗] No selection made', true);
-        return;
-      }
-
-      try {
-        log('signInLog', '[✓] Selection value: ' + val);
-
-        const parts = val.split(':');
-        const type = parts[0];
-        const idx = parseInt(parts[1]);
-
-        log('signInLog', '[✓] Type: ' + type + ', Index: ' + idx);
-
-        let user;
-
-        if(type === 'n') {
-          user = NURSERY_LIST[idx];
-          log('signInLog', '[✓] Looking up nursery at index ' + idx);
-        } else if(type === 'm') {
-          user = MGMT_LIST[idx];
-          log('signInLog', '[✓] Looking up manager at index ' + idx);
-        } else {
-          log('signInLog', '[✗] Unknown type: ' + type, true);
-          return;
-        }
-
-        if(!user) {
-          log('signInLog', '[✗] User not found at index ' + idx, true);
-          return;
-        }
-
-        log('signInLog', '[✓] User object: ' + JSON.stringify(user));
-        log('signInLog', '[✓] Selected: ' + (user.name || user.nursery));
-
-        const sessionData = JSON.stringify(user);
-        log('signInLog', '[✓] Session data: ' + sessionData);
-
-        try {
-          sessionStorage.setItem('icSession', sessionData);
-          log('signInLog', '[✓] Session stored in sessionStorage');
-
-          // Verify it was stored
-          const retrieved = sessionStorage.getItem('icSession');
-          if(retrieved) {
-            log('signInLog', '[✓] Verified: session retrieved from storage');
-          } else {
-            log('signInLog', '[✗] ERROR: session not found after storing!', true);
-            return;
-          }
-        } catch(e) {
-          log('signInLog', '[✗] ERROR storing session: ' + e.message, true);
-          return;
-        }
-
-        log('signInLog', '[✓] Redirecting to main app in 2s...');
-
-        setTimeout(() => {
-          window.location.href = 'https://alechodson.github.io/issue-companion/';
-        }, 2000);
-
-      } catch(e) {
-        log('signInLog', '[✗] ERROR: ' + e.message, true);
-        log('signInLog', '[✗] Stack: ' + e.stack, true);
-      }
+async function msalSignIn(){
+  document.getElementById('authError').style.display = 'none';
+  if(!msalInstance){
+    document.getElementById('authError').textContent = 'Authentication not ready — please refresh the page.';
+    document.getElementById('authError').style.display = 'block';
+    return;
+  }
+  try {
+    var loginHint = SESSION ? SESSION.email : '';
+    var resp;
+    try {
+      resp = await withTimeout(msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: loginHint }), 4000);
+    } catch(e){
+      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: loginHint });
     }
-  function applySession(){
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    document.getElementById('authOverlay').style.display = 'none';
+    if(!SESSION) await resolveIdentityFromGraph();
+  } catch(e) {
+    var err = document.getElementById('authError');
+    err.textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
+    err.style.display = 'block';
+  }
+}
+
+/* ================================================================
+   SHAREPOINT DATA LAYER
+   ================================================================ */
+async function spReadJSON(path){
+  try {
+    const token = await getGraphToken();
+    if(!token) return null;
+    // Get download URL first
+    const meta = await graphFetch('GET', '/drives/' + DRIVE_ID + '/root:/' + path + ':/content');
+    return meta; // graphFetch returns parsed JSON
+  } catch(e) { return null; }
+}
+
+async function spWriteJSON(path, data){
+  const token = await getGraphToken();
+  if(!token) throw new Error('Not authenticated');
+  const resp = await fetch(
+    'https://graph.microsoft.com/v1.0/drives/' + DRIVE_ID + '/root:/' + path + ':/content',
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }
+  );
+  if(!resp.ok) throw new Error('Write failed: ' + resp.status);
+  return await resp.json();
+}
+
+async function spListFolder(folderPath){
+  try {
+    const result = await graphFetch('GET', '/drives/' + DRIVE_ID + '/root:/' + folderPath + ':/children?$select=name,id,lastModifiedDateTime&$top=500');
+    return result && result.value ? result.value : [];
+  } catch(e) { return []; }
+}
+
+async function spDeleteFile(path){
+  try {
+    await graphFetch('DELETE', '/drives/' + DRIVE_ID + '/root:/' + path);
+  } catch(e) {}
+}
+
+/* ================================================================
+   ISSUE CRUD
+   ================================================================ */
+async function getAllIssues(){
+  showLoading('Loading issues...');
+  try {
+    const files = await spListFolder(ISSUES_PATH);
+    const issues = [];
+    // Fetch all in parallel (batch of 20)
+    const chunks = [];
+    for(let i=0;i<files.length;i+=20) chunks.push(files.slice(i,i+20));
+    for(const chunk of chunks){
+      const batch = await Promise.all(chunk.map(f => spReadJSON(ISSUES_PATH + '/' + f.name).catch(()=>null)));
+      batch.forEach(d => { if(d && d.id) issues.push(d); });
+    }
+    return issues.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } finally { hideLoading(); }
+}
+
+async function getMyIssues(){
+  const all = await getAllIssues();
+  if(!SESSION) return all;
+  if(SESSION.canViewDashboard) return all;
+  return all.filter(i => i.nursery === SESSION.nursery);
+}
+
+async function writeIssue(issue){
+  await spWriteJSON(ISSUES_PATH + '/' + issue.id + '.json', issue);
+}
+
+async function getIssueById(id){
+  return await spReadJSON(ISSUES_PATH + '/' + id + '.json');
+}
+
+async function getCommentsForIssue(issueId){
+  try {
+    const files = await spListFolder(COMMENTS_PATH);
+    const matching = files.filter(f => f.name.startsWith(issueId + '_'));
+    const comments = await Promise.all(matching.map(f => spReadJSON(COMMENTS_PATH + '/' + f.name).catch(()=>null)));
+    return comments.filter(Boolean).sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+  } catch(e) { return []; }
+}
+
+async function writeComment(comment){
+  const filename = comment.issueId + '_' + comment.id + '.json';
+  await spWriteJSON(COMMENTS_PATH + '/' + filename, comment);
+}
+
+/* ================================================================
+   EMAIL NOTIFICATIONS (via logged-in user's Graph Mail.Send)
+   ================================================================ */
+async function sendEmail(to, subject, htmlBody){
+  try {
+    await graphFetch('POST', '/me/sendMail', {
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: htmlBody },
+        toRecipients: (Array.isArray(to) ? to : [to]).map(addr => ({
+          emailAddress: { address: addr }
+        }))
+      },
+      saveToSentItems: true
+    });
+    return true;
+  } catch(e) {
+    console.warn('Email send failed:', e);
+    return false;
+  }
+}
+
+function issueEmailBody(issue, extraMsg){
+  const url = window.location.href.split('?')[0];
+  return `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+  <div style="background:#3B1F6A;padding:18px 24px;border-radius:8px 8px 0 0;">
+    <img src="https://www.completechildcare.co.uk/img/logo.png" style="height:36px;" alt="Complete Childcare Group"/>
+  </div>
+  <div style="background:#F5EFE2;padding:24px;border-radius:0 0 8px 8px;border:1px solid #D8CDB5;">
+    <h2 style="color:#2A1450;margin:0 0 12px;">${issue.catName} — ${issue.nursery}</h2>
+    <p style="margin:0 0 8px;"><strong>Reference:</strong> ${issue.id}</p>
+    <p style="margin:0 0 8px;"><strong>Severity:</strong> ${LEVEL_LABEL[issue.governingRating]||issue.governingRating}</p>
+    <p style="margin:0 0 8px;"><strong>Status:</strong> ${issue.status.charAt(0).toUpperCase()+issue.status.slice(1)}</p>
+    <p style="margin:0 0 16px;"><strong>Logged by:</strong> ${issue.loggedBy}</p>
+    ${extraMsg ? '<div style="background:#EDE8F5;border-left:3px solid #5a2f85;padding:12px 16px;border-radius:0 6px 6px 0;margin-bottom:16px;">' + extraMsg + '</div>' : ''}
+    <p style="margin:0 0 16px;"><strong>Original description:</strong><br/>${(issue.desc||'').replace(/\n/g,'<br/>')}</p>
+    <a href="${url}" style="display:inline-block;background:#3B1F6A;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Open Issue Companion</a>
+    <p style="margin:16px 0 0;font-size:11px;color:#888;">This is an automated notification from the CCG Issue Companion. Please do not reply to this email — use the Issue Companion to respond.</p>
+  </div>
+</div>`;
+}
+
+/* ================================================================
+   STATE
+   ================================================================ */
+var selectedCat = null;
+var selectedUrgency = null;
+var copilotAssessedLevel = null;
+var currentIssueId = null;
+var resolveTargetId = null;
+var currentDetailIssueId = null;
+
+
+/* ================================================================
+   UI HELPERS
+   ================================================================ */
+function showLoading(msg){ 
+  const o=document.getElementById('loadingOverlay');
+  if(o){o.style.display='flex'; document.getElementById('loadingMsg').textContent=msg||'Loading...';}
+}
+function hideLoading(){ 
+  const o=document.getElementById('loadingOverlay');
+  if(o) o.style.display='none';
+}
+function showToast(msg, dur){
+  const t=document.getElementById('toast');
+  if(!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur||3000);
+}
+
+const LEVEL_LABEL={low:'Low',medium:'Medium',high:'High',critical:'Critical'};
+const LEVEL_ORDER={low:0,medium:1,high:2,critical:3};
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function showPage(id, btn){
+  const mgmtPages = ['dashboard','allissues','routing'];
+  if(mgmtPages.includes(id) && !(SESSION && SESSION.canViewDashboard)){
+    showToast('You do not have permission to view this page.');
+    return;
+  }
+  previousPage = document.querySelector('.page.active')?.id?.replace('page-','') || 'log';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navlist button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='myissues') renderMyIssues();
+  if(id==='dashboard') renderDashboard();
+  if(id==='allissues') renderAllIssues();
+}
+
+function goBack(){
+  showPage(previousPage || 'log');
+}
+
+/* ================================================================
+   IDENTITY
+   ================================================================ */
+function getStoredSession(){try{return JSON.parse(sessionStorage.getItem('icSession')||'null');}catch(e){return null;}}
+function storeSession(s){try{sessionStorage.setItem('icSession',JSON.stringify(s));}catch(e){}}
+
+function matchUserByEmail(email){
+  if(!email) return null;
+  const e = email.toLowerCase();
+  for(const u of MGMT_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
+  for(const u of NURSERY_LIST){ if((u.email||'').toLowerCase()===e) return Object.assign({},u); }
+  return null;
+}
+
+function matchUserByDisplayName(name){
+  if(!name) return null;
+  const n = name.toLowerCase();
+  for(const u of MGMT_LIST){ if(u.name.toLowerCase()===n) return Object.assign({},u); }
+  return null;
+}
+
+function populateIdentitySelect(){
+  const sel=document.getElementById('idSelect');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Select your nursery or name —</option>';
+  const ng=document.createElement('optgroup'); ng.label='Nurseries';
+  NURSERY_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='n:'+i;o.textContent=u.nursery;ng.appendChild(o);});
+  sel.appendChild(ng);
+  const mg=document.createElement('optgroup'); mg.label='Management & Head Office';
+  MGMT_LIST.forEach((u,i)=>{const o=document.createElement('option');o.value='m:'+i;o.textContent=u.name+' — '+u.title;mg.appendChild(o);});
+  sel.appendChild(mg);
+}
+
+function confirmIdentity(){
+  const sel=document.getElementById('idSelect'); const val=sel.value;
+  if(!val){document.getElementById('idError').style.display='block';return;}
+  document.getElementById('idError').style.display='none';
+  SESSION = val.startsWith('n:') ? Object.assign({},NURSERY_LIST[parseInt(val.slice(2))]) : Object.assign({},MGMT_LIST[parseInt(val.slice(2))]);
+  storeSession(SESSION);
+  document.getElementById('identityModal').classList.remove('active');
+  applySession();
+}
+
+function clearIdentity(){
+  try{sessionStorage.removeItem('icSession');}catch(e){}
+  SESSION=null; graphToken=null;
+  document.getElementById('identityModal').classList.add('active');
+  populateIdentitySelect();
+}
+
+function applySession(){
   if(!SESSION) return;
   document.getElementById('sessionUserName').textContent = SESSION.name||SESSION.nursery;
   document.getElementById('sessionNursery').textContent = SESSION.isHR ? (SESSION.title+' — '+SESSION.nursery) : SESSION.nursery;
@@ -1068,85 +2082,82 @@ function withTimeout(promise, ms){
   ]);
 }
 
-// Initialize when DOM is ready
-function initSignIn(){
-  console.log('[IC] Init: checking for stored session first');
+(async function(){
 
-  // FIRST: Check for stored session BEFORE populating dropdown
-  let storedSession = window.AUTO_SESSION || null;
-
-  if(!storedSession){
+  // ── Step 1: Try Teams SDK (with strict timeout so it never hangs) ──────────
+  var teamsUPN = null;
+  if(typeof microsoftTeams !== 'undefined'){
     try {
-      const sessionStr = sessionStorage.getItem('icSession');
-      console.log('[IC] sessionStorage.getItem("icSession") = ' + sessionStr);
-
-      if(sessionStr){
-        storedSession = JSON.parse(sessionStr);
-        console.log('[IC] Parsed stored session:', storedSession);
-      }
-    } catch(e){
-      console.log('[IC] Error reading stored session:', e.message);
-    }
-  } else {
-    console.log('[IC] Using pre-cached session from window.AUTO_SESSION');
+      await withTimeout(microsoftTeams.app.initialize(), 2000);
+      var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
+      // Teams SDK v2 requires explicit user info request
+      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
+      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
+    } catch(e){ teamsUPN = null; }
   }
 
-  // If we have a stored session, use it immediately
-  if(storedSession && (storedSession.name || storedSession.nursery)){
-    console.log('[IC] AUTO-SIGNING IN as:', storedSession.name || storedSession.nursery);
-    SESSION = storedSession;
+  if(teamsUPN){
+    var user = matchUserByEmail(teamsUPN);
+    if(user){
+      SESSION = user;
+      storeSession(SESSION);
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      // In Teams context: use loginPopup for automatic sign-in (no user interaction needed)
+      try {
+        var r = await withTimeout(
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 8000
+        );
+        graphToken = r.accessToken;
+        tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
+      } catch(e){
+        // If popup fails, fall back to showing connect button
+        console.warn('Teams auto sign-in failed:', e.message);
+        document.getElementById('authOverlay').style.display = 'flex';
+      }
+      return;
+    }
+  }
+
+  // ── Step 2: MSAL silent (cached token — works after first sign-in) ─────────
+  var accounts = msalInstance ? msalInstance.getAllAccounts() : [];
+  if(accounts.length){
+    try {
+      var r2 = await withTimeout(
+        msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] }), 5000
+      );
+      graphToken = r2.accessToken;
+      tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
+      await resolveIdentityFromGraph();
+      return;
+    } catch(e){ 
+      // Silent failed — try loginPopup as fallback
+      try {
+        var r2b = await withTimeout(
+          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, account: accounts[0] }), 8000
+        );
+        graphToken = r2b.accessToken;
+        tokenExpiry = r2b.expiresOn ? r2b.expiresOn.getTime() : Date.now()+3600000;
+        await resolveIdentityFromGraph();
+        return;
+      } catch(e2){ /* both silent and popup failed */ }
+    }
+  }
+
+  // ── Step 3: Stored identity ────────────────────────────────────────────────
+  var stored = getStoredSession();
+  if(stored){
+    SESSION = stored;
     document.getElementById('identityModal').classList.remove('active');
     applySession();
+    // Don't show authOverlay — user signed in via signin.html, SharePoint works via app token
     return;
   }
 
-  console.log('[IC] No stored session found, showing picker');
-
-  // SECOND: Populate the dropdown
-  const sel = document.getElementById('idSelect');
-  if(!sel){
-    console.log('[IC] ERROR: idSelect element not found');
-    return;
-  }
-
-  sel.innerHTML = '<option value="">— Select your nursery or name —</option>';
-
-  // Add nurseries
-  const ng = document.createElement('optgroup');
-  ng.label = 'Nurseries';
-  NURSERY_LIST.forEach((u, i) => {
-    const o = document.createElement('option');
-    o.value = 'n:' + i;
-    o.textContent = u.nursery;
-    ng.appendChild(o);
-  });
-  sel.appendChild(ng);
-  console.log('[IC] Added ' + NURSERY_LIST.length + ' nurseries');
-
-  // Add management
-  const mg = document.createElement('optgroup');
-  mg.label = 'Management & Head Office';
-  MGMT_LIST.forEach((u, i) => {
-    const o = document.createElement('option');
-    o.value = 'm:' + i;
-    o.textContent = u.name + ' — ' + u.title;
-    mg.appendChild(o);
-  });
-  sel.appendChild(mg);
-  console.log('[IC] Added ' + MGMT_LIST.length + ' management users');
-
-  // Show the picker
-  console.log('[IC] Showing identity picker');
+  // ── Step 4: First visit — show picker and connect button ───────────────────
   document.getElementById('identityModal').classList.add('active');
-}
-
-// Call when DOM is ready
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', initSignIn);
-} else {
-  // DOM already loaded
-  initSignIn();
-}
+  document.getElementById('authOverlay').style.display = 'flex';
+})();
 
 
 
@@ -1248,9 +2259,6 @@ function sendChatMessage(){
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }, 600);
 }
-
-
-
 </script>
 </body>
 </html>
