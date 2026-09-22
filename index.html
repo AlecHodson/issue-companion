@@ -2076,7 +2076,7 @@ function applySearchHint(catId){
 }
 
 /* ================================================================
-   INIT — ported from HR Companion (proven pattern)
+   INIT — exact HR Companion pattern
    ================================================================ */
 
 async function initAuth() {
@@ -2088,9 +2088,9 @@ async function initAuth() {
     const resp = await msalInstance.handleRedirectPromise();
     if (resp && resp.account) {
       graphToken = resp.accessToken;
-      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
       const user = matchUserByEmail(resp.account.username);
-      SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: resp.account.username};
+      SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: resp.account.username};
       document.getElementById('identityModal').classList.remove('active');
       applySession();
       return;
@@ -2107,9 +2107,9 @@ async function initAuth() {
         try {
           const silentResp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
           graphToken = silentResp.accessToken;
-          tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now() + 3600000;
+          tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now()+3600000;
           const user = matchUserByEmail(loginHint);
-          SESSION = user || {name: loginHint, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: loginHint};
+          SESSION = user || {name: loginHint, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: loginHint};
           document.getElementById('identityModal').classList.remove('active');
           applySession();
           return;
@@ -2118,52 +2118,52 @@ async function initAuth() {
     } catch(e) { console.warn('Teams init:', e); }
   }
 
-  // Try silent from cached MSAL account
+  // Try silent from cached account
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     try {
       const silentResp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
       graphToken = silentResp.accessToken;
-      tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now() + 3600000;
+      tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now()+3600000;
       const user = matchUserByEmail(accounts[0].username);
-      SESSION = user || {name: accounts[0].name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: accounts[0].username};
+      SESSION = user || {name: accounts[0].name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: accounts[0].username};
       document.getElementById('identityModal').classList.remove('active');
       applySession();
       return;
     } catch(e) { console.warn('Silent failed:', e); }
   }
 
-  // All silent attempts failed — show identity picker
+  // All silent attempts failed — show picker
   populateIdentitySelect();
   document.getElementById('identityModal').classList.add('active');
 }
 
-async function msalSignIn() {
-  document.getElementById('idError').style.display = 'none';
+async function doSignIn() {
+  document.getElementById('idStatus').textContent = 'Signing in...';
   try {
-    const loginHint = SESSION ? SESSION.email : '';
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
     graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     const user = matchUserByEmail(resp.account.username);
-    SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: resp.account.username};
+    SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:true, email: resp.account.username};
     document.getElementById('identityModal').classList.remove('active');
     storeSession(SESSION);
     applySession();
+    renderDashboard();
+    renderMyIssues();
   } catch(e) {
+    document.getElementById('idStatus').textContent = 'Sign-in failed. Please try the manual option below.';
     console.warn('Login popup failed:', e);
-    if(statusEl) statusEl.textContent = 'Sign-in failed. Please try the manual option below.';
-    document.getElementById('idError').textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
-    document.getElementById('idError').style.display = 'block';
   }
 }
 
 (async function(){
-  // Render app immediately so it's not a blank screen
+  // Render app immediately in guest mode — no blank screen
+  SESSION = {name:'', nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email:''};
   applySession();
-  // Run auth
+  // Then run auth
   await initAuth();
-  // Load data if authenticated
+  // If authenticated, load data
   if(graphToken){
     renderDashboard();
     renderMyIssues();
