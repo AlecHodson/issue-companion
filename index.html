@@ -298,7 +298,6 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 .issue-row{cursor:pointer;transition:background .1s;}
 .issue-row:hover td{background:var(--purple-tint)!important;}
 </style>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 </head>
 <body>
 
@@ -369,7 +368,6 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <div class="who-box" id="whoBox">
       <strong id="sessionUserName">—</strong>
       <span id="sessionNursery"></span>
-      <button id="connectM365Btn" onclick="connectM365()" style="display:none;margin-top:8px;width:100%;padding:6px;background:#764ba2;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">&#128274; Connect Microsoft 365</button>
     </div>
     <div class="nav-section">Main</div>
     <nav class="navlist" id="navlist">
@@ -1370,16 +1368,7 @@ function clearIdentity(){
 function applySession(){
   if(!SESSION) return;
   document.getElementById('sessionUserName').textContent = SESSION.name||SESSION.nursery;
-  // Show Connect M365 button if no graph token
-  setTimeout(function(){
-    const btn = document.getElementById('connectM365Btn');
-    if(btn) btn.style.display = graphToken ? 'none' : 'block';
-  }, 1500);
-  // Show M365 banner if no graph token yet
-  if(!graphToken){
-    const banner = document.getElementById('m365Banner');
-    if(banner) banner.style.display = 'flex';
-  }
+
   document.getElementById('sessionNursery').textContent = SESSION.isHR ? (SESSION.title+' — '+SESSION.nursery) : SESSION.nursery;
   if(SESSION.canViewDashboard){
     document.getElementById('mgmtNavSection').style.display='block';
@@ -1563,12 +1552,7 @@ async function saveDraft(){
   showLoading('Saving...');
   try {
     const token = await getGraphToken();
-    if(!token){
-      // Show the Connect M365 button prominently
-      const btn = document.getElementById('connectM365Btn');
-      if(btn) btn.style.display = 'block';
-      throw new Error('Please click "Connect Microsoft 365" in the sidebar to enable saving.');
-    }
+    if(!token) throw new Error('Could not get Microsoft 365 token. Please sign in with Microsoft when prompted.');
     const issue=buildIssue(desc,'draft');
     await writeIssue(issue);
     showToast('Draft saved. Find it in My Issues.');
@@ -2162,25 +2146,6 @@ function signInAs(user) {
   applySession();
   if(typeof renderDashboard === 'function') renderDashboard();
   if(typeof renderMyIssues === 'function') renderMyIssues();
-}
-
-async function connectM365() {
-  try {
-    if(!msalInstance){
-      showToast('Microsoft auth not ready — please wait a moment and try again.');
-      return;
-    }
-    showToast('Opening Microsoft sign-in...');
-    const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
-    graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
-    document.getElementById('connectM365Btn').style.display = 'none';
-    showToast('Connected to Microsoft 365. You can now save issues.');
-  } catch(e) {
-    console.warn('[M365] Connect failed:', e.message);
-    showToast('Microsoft sign-in failed: ' + (e.message||'Unknown error'));
-  }
 }
 
 function clearIdentity() {
