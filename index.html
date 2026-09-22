@@ -2234,7 +2234,8 @@ function openSupportChat(){
 function toggleSupportChat(){
   const widget = document.getElementById('supportChatWidget');
   const toggle = document.getElementById('supportChatToggle');
-  if(widget.style.display === 'none'){
+  if(!widget || !toggle) return;
+  if(widget.style.display === 'none' || widget.style.display === ''){
     widget.style.display = 'flex';
     toggle.style.display = 'none';
   } else {
@@ -2244,8 +2245,10 @@ function toggleSupportChat(){
 }
 function closeSupportChat(e){
   e.stopPropagation();
-  document.getElementById('supportChatWidget').style.display = 'none';
-  document.getElementById('supportChatToggle').style.display = 'flex';
+  const widget = document.getElementById('supportChatWidget');
+  const toggle = document.getElementById('supportChatToggle');
+  if(widget) widget.style.display = 'none';
+  if(toggle) toggle.style.display = 'flex';
 }
 function sendChatMessage(){
   const input = document.getElementById('chatInput');
