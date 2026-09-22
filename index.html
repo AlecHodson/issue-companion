@@ -2082,80 +2082,60 @@ function withTimeout(promise, ms){
   ]);
 }
 
-(async function(){
+(function(){
+  // Simple sign-in: populate dropdown and show picker
+  console.log('[IC] Init: populating identity select');
 
-  // ── Step 1: Try Teams SDK (with strict timeout so it never hangs) ──────────
-  var teamsUPN = null;
-  if(typeof microsoftTeams !== 'undefined'){
-    try {
-      await withTimeout(microsoftTeams.app.initialize(), 2000);
-      var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
-      // Teams SDK v2 requires explicit user info request
-      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
-      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
-    } catch(e){ teamsUPN = null; }
-  }
-
-  if(teamsUPN){
-    var user = matchUserByEmail(teamsUPN);
-    if(user){
-      SESSION = user;
-      storeSession(SESSION);
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      // In Teams context: use loginPopup for automatic sign-in (no user interaction needed)
-      try {
-        var r = await withTimeout(
-          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 8000
-        );
-        graphToken = r.accessToken;
-        tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
-      } catch(e){
-        // If popup fails, fall back to showing connect button
-        console.warn('Teams auto sign-in failed:', e.message);
-        document.getElementById('authOverlay').style.display = 'flex';
-      }
-      return;
-    }
-  }
-
-  // ── Step 2: MSAL silent (cached token — works after first sign-in) ─────────
-  var accounts = msalInstance ? msalInstance.getAllAccounts() : [];
-  if(accounts.length){
-    try {
-      var r2 = await withTimeout(
-        msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] }), 5000
-      );
-      graphToken = r2.accessToken;
-      tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
-      await resolveIdentityFromGraph();
-      return;
-    } catch(e){ 
-      // Silent failed — try loginPopup as fallback
-      try {
-        var r2b = await withTimeout(
-          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, account: accounts[0] }), 8000
-        );
-        graphToken = r2b.accessToken;
-        tokenExpiry = r2b.expiresOn ? r2b.expiresOn.getTime() : Date.now()+3600000;
-        await resolveIdentityFromGraph();
-        return;
-      } catch(e2){ /* both silent and popup failed */ }
-    }
-  }
-
-  // ── Step 3: Stored identity, need token ────────────────────────────────────
-  var stored = getStoredSession();
-  if(stored){
-    SESSION = stored;
-    applySession();
-    document.getElementById('authOverlay').style.display = 'flex';
+  // Populate the dropdown
+  const sel = document.getElementById('idSelect');
+  if(!sel){
+    console.log('[IC] ERROR: idSelect element not found');
     return;
   }
 
-  // ── Step 4: First visit — show picker and connect button ───────────────────
+  sel.innerHTML = '<option value="">— Select your nursery or name —</option>';
+
+  // Add nurseries
+  const ng = document.createElement('optgroup');
+  ng.label = 'Nurseries';
+  NURSERY_LIST.forEach((u, i) => {
+    const o = document.createElement('option');
+    o.value = 'n:' + i;
+    o.textContent = u.nursery;
+    ng.appendChild(o);
+  });
+  sel.appendChild(ng);
+  console.log('[IC] Added ' + NURSERY_LIST.length + ' nurseries');
+
+  // Add management
+  const mg = document.createElement('optgroup');
+  mg.label = 'Management & Head Office';
+  MGMT_LIST.forEach((u, i) => {
+    const o = document.createElement('option');
+    o.value = 'm:' + i;
+    o.textContent = u.name + ' — ' + u.title;
+    mg.appendChild(o);
+  });
+  sel.appendChild(mg);
+  console.log('[IC] Added ' + MGMT_LIST.length + ' management users');
+
+  // Check for stored session
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+    if(stored){
+      console.log('[IC] Found stored session for:', stored.name || stored.nursery);
+      SESSION = stored;
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      return;
+    }
+  } catch(e){
+    console.log('[IC] No valid stored session');
+  }
+
+  // Show the picker
+  console.log('[IC] Showing identity picker');
   document.getElementById('identityModal').classList.add('active');
-  document.getElementById('authOverlay').style.display = 'flex';
 })();
 
 
