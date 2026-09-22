@@ -5,8 +5,8 @@
 <title>Issue Companion — Complete Childcare Group</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -706,7 +706,8 @@ const MSAL_CONFIG = {
   auth: {
     clientId: 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a',
     authority: 'https://login.microsoftonline.com/c498c1f7-99ac-42e6-bd6f-e819bf40f167',
-    redirectUri: window.location.href.split('?')[0].split('#')[0]
+    redirectUri: 'https://alechodson.github.io/issue-companion/',
+    navigateToLoginRequestUrl: false
   },
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
 };
