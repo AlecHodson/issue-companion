@@ -2081,8 +2081,11 @@ function checkPasscode() {
   const errEl = document.getElementById('idError');
   errEl.style.display = 'none';
 
-  // Check nursery passcodes
-  const nurseryMatch = NURSERY_LIST.find(u => u.nursery.toLowerCase().replace(/[^a-z]/g,'') === code || (u.passcode && u.passcode === code));
+  // Check nursery passcodes — first word of nursery name (e.g. "abacus", "saltway", "happitots")
+  const nurseryMatch = NURSERY_LIST.find(u => {
+    const firstWord = u.nursery.toLowerCase().split(' ')[0].replace(/[^a-z]/g,'');
+    return firstWord === code || (u.passcode && u.passcode === code);
+  });
   if (nurseryMatch) {
     signInAs(nurseryMatch);
     return;
@@ -2118,8 +2121,8 @@ function signInAs(user) {
   try { sessionStorage.setItem('icSession', JSON.stringify(user)); } catch(e) {}
   document.getElementById('identityModal').classList.remove('active');
   applySession();
-  renderDashboard();
-  renderMyIssues();
+  if(typeof renderDashboard === 'function') renderDashboard();
+  if(typeof renderMyIssues === 'function') renderMyIssues();
 }
 
 function clearIdentity() {
@@ -2140,8 +2143,8 @@ function clearIdentity() {
       SESSION = stored;
       document.getElementById('identityModal').classList.remove('active');
       applySession();
-      renderDashboard();
-      renderMyIssues();
+      if(typeof renderDashboard === 'function') renderDashboard();
+      if(typeof renderMyIssues === 'function') renderMyIssues();
       return;
     }
   } catch(e) {}
