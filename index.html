@@ -1707,7 +1707,7 @@ async function renderAllIssues(){
   }
 }
 
-function renderArchivedIssues(){
+async function renderArchivedIssues(){
   if(!(SESSION&&SESSION.canViewDashboard)){
     const el=document.getElementById('archivedIssuesContent');
     if(el) el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Access restricted.</p>';
