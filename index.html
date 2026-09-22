@@ -1038,13 +1038,30 @@ function applySearchHint(catId){
 var msalInstance = null;
 (function tryInitMSAL(){
   if(typeof msal === 'undefined' || !msal.PublicClientApplication){
-    // Library not loaded yet - retry in 100ms
     setTimeout(tryInitMSAL, 100);
     return;
   }
   try {
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-    msalInstance.initialize();
+    msalInstance.initialize().then(async function(){
+      // Handle redirect
+      try { await msalInstance.handleRedirectPromise(); } catch(e){}
+      // Try silent token for cached account
+      const accounts = msalInstance.getAllAccounts();
+      if(accounts.length > 0 && !graphToken){
+        try {
+          const silent = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+          graphToken = silent.accessToken;
+          tokenExpiry = silent.expiresOn ? silent.expiresOn.getTime() : Date.now()+3600000;
+          console.log('[MSAL] Silent token acquired for', accounts[0].username);
+          // Auto-match session from M365 account
+          if(!SESSION || !SESSION.email){
+            const user = matchUserByEmail(accounts[0].username);
+            if(user){ SESSION = user; applySession(); }
+          }
+        } catch(e){ console.warn('[MSAL] Silent failed:', e.message); }
+      }
+    }).catch(function(e){ console.error('MSAL init failed:', e); });
   } catch(e) {
     console.error('MSAL init failed:', e);
   }
