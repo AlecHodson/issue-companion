@@ -1706,20 +1706,6 @@ async function renderArchivedIssues(){
   showLoading('Loading archived issues...');
   try {
     const allIssues=await getAllIssues();
-    // Debug: show what we got
-    const debugEl=document.getElementById('archivedIssuesContent');
-    if(debugEl){
-      debugEl.innerHTML='<p style="font-size:11px;color:#666;font-family:monospace;">'
-        +'Total issues loaded: '+allIssues.length+'<br>'
-        +'Session: '+(SESSION.name||SESSION.nursery)+'<br>'
-        +'canViewDashboard: '+SESSION.canViewDashboard+'<br>'
-        +'Issues with archived=true: '+allIssues.filter(i=>i.archived===true).length+'<br>'
-        +'Issues with archived=1: '+allIssues.filter(i=>i.archived===1).length+'<br>'
-        +'Issues with archived truthy: '+allIssues.filter(i=>i.archived).length+'<br>'
-        +'Sample issue keys: '+(allIssues[0]?Object.keys(allIssues[0]).join(', '):'none')+'<br>'
-        +(allIssues[0]?'Sample archived value: '+JSON.stringify(allIssues[0].archived):'')
-        +'</p>';
-    }
     // Managers see all archived; nursery users see only their own nursery
     let issues=allIssues.filter(i=>i.archived);
     if(!SESSION.canViewDashboard){
@@ -2165,13 +2151,25 @@ function withTimeout(promise, ms){
     }
   }
 
-  // ── Step 3: Stored identity ────────────────────────────────────────────────
+  // ── Step 3: Stored identity — try silent token, else show connect button ────
   var stored = getStoredSession();
   if(stored){
     SESSION = stored;
     document.getElementById('identityModal').classList.remove('active');
     applySession();
-    // Don't show authOverlay — user signed in via signin.html, SharePoint works via app token
+    // Try silent MSAL token using stored email so SharePoint works without a popup
+    if(msalInstance && stored.email){
+      try {
+        var r3 = await withTimeout(
+          msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: stored.email }), 4000
+        );
+        graphToken = r3.accessToken;
+        tokenExpiry = r3.expiresOn ? r3.expiresOn.getTime() : Date.now()+3600000;
+        return; // Got token silently — no overlay needed
+      } catch(e){ /* silent failed — fall through to show connect button */ }
+    }
+    // Silent failed: show connect button so user can authenticate to SharePoint
+    document.getElementById('authOverlay').style.display = 'flex';
     return;
   }
 
