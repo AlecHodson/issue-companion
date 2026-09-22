@@ -1706,6 +1706,8 @@ async function renderArchivedIssues(){
   showLoading('Loading archived issues...');
   try {
     const allIssues=await getAllIssues();
+    console.log('[ARCHIVE] Total issues:', allIssues.length);
+    allIssues.forEach(i => console.log('[ARCHIVE]', i.id, 'archived=', JSON.stringify(i.archived)));
     // Managers see all archived; nursery users see only their own nursery
     let issues=allIssues.filter(i=>i.archived);
     if(!SESSION.canViewDashboard){
@@ -2169,8 +2171,8 @@ function withTimeout(promise, ms){
 
 
 async function toggleArchiveIssue(issueId){
-  if(!SESSION){
-    alert('Please sign in to archive issues');
+  if(!SESSION || !SESSION.canViewDashboard){
+    alert('Only managers can archive issues');
     return;
   }
 
