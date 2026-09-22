@@ -2082,8 +2082,8 @@ function withTimeout(promise, ms){
   ]);
 }
 
-(function(){
-  // Simple sign-in: populate dropdown and show picker
+// Initialize when DOM is ready
+function initSignIn(){
   console.log('[IC] Init: populating identity select');
 
   // Populate the dropdown
@@ -2136,7 +2136,15 @@ function withTimeout(promise, ms){
   // Show the picker
   console.log('[IC] Showing identity picker');
   document.getElementById('identityModal').classList.add('active');
-})();
+}
+
+// Call when DOM is ready
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initSignIn);
+} else {
+  // DOM already loaded
+  initSignIn();
+}
 
 
 
