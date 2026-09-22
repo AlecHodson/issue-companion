@@ -2277,6 +2277,93 @@ function sendChatMessage(){
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }, 600);
 }
+
+
+// ===== BULLETPROOF POPULATE =====
+function populateIdentitySelectNow(){
+  const sel = document.getElementById('idSelect');
+  if(!sel){
+    console.log('[IC-BP] ERROR: idSelect not found');
+    return;
+  }
+
+  if(!NURSERY_LIST || !MGMT_LIST){
+    console.log('[IC-BP] ERROR: Lists not defined yet, retrying...');
+    return false;
+  }
+
+  console.log('[IC-BP] Populating with', NURSERY_LIST.length, 'nurseries and', MGMT_LIST.length, 'managers');
+
+  sel.innerHTML = '<option value="">— Select your nursery or name —</option>';
+
+  const ng = document.createElement('optgroup');
+  ng.label = 'Nurseries';
+  NURSERY_LIST.forEach((u, i) => {
+    const o = document.createElement('option');
+    o.value = 'n:' + i;
+    o.textContent = u.nursery;
+    ng.appendChild(o);
+  });
+  sel.appendChild(ng);
+
+  const mg = document.createElement('optgroup');
+  mg.label = 'Management & Head Office';
+  MGMT_LIST.forEach((u, i) => {
+    const o = document.createElement('option');
+    o.value = 'm:' + i;
+    o.textContent = u.name + ' — ' + u.title;
+    mg.appendChild(o);
+  });
+  sel.appendChild(mg);
+
+  console.log('[IC-BP] SUCCESS: Populated', sel.options.length, 'options');
+  return true;
+}
+
+// Try to populate on DOMContentLoaded
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[IC-BP] DOMContentLoaded fired');
+    populateIdentitySelectNow();
+  });
+} else {
+  console.log('[IC-BP] DOM already ready');
+  populateIdentitySelectNow();
+}
+
+// Retry every 200ms for 10 seconds if lists haven't loaded
+let retries = 0;
+const retryInterval = setInterval(() => {
+  retries++;
+  const sel = document.getElementById('idSelect');
+
+  if(!sel){
+    console.log('[IC-BP] Retry', retries, ': select element not found');
+    if(retries > 50) clearInterval(retryInterval);
+    return;
+  }
+
+  // If already populated, stop retrying
+  if(sel.options.length > 1){
+    console.log('[IC-BP] Already populated, stopping retries');
+    clearInterval(retryInterval);
+    return;
+  }
+
+  // Try to populate
+  const success = populateIdentitySelectNow();
+  if(success){
+    console.log('[IC-BP] Success on retry', retries);
+    clearInterval(retryInterval);
+  } else {
+    console.log('[IC-BP] Retry', retries, ': lists not ready yet');
+  }
+
+  if(retries > 50){
+    console.log('[IC-BP] Gave up after 50 retries');
+    clearInterval(retryInterval);
+  }
+}, 200);
 </script>
 </body>
 </html>
