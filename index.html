@@ -1061,17 +1061,26 @@ function initMSAL(){
 
 async function getGraphToken(){
   if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
-  const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
-  if(!accounts.length) return null;
+  if(!msalInstance) return null;
+  const accounts = msalInstance.getAllAccounts();
+  // Try silent first
+  if(accounts.length > 0){
+    try {
+      const resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+      graphToken = resp.accessToken;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+      return graphToken;
+    } catch(e){ console.warn('[TOKEN] Silent failed, trying popup:', e.message); }
+  }
+  // Silent failed — try popup
   try {
-    const resp = await msalInstance.acquireTokenSilent({
-      scopes: GRAPH_SCOPES,
-      account: accounts[0]
-    });
+    const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
     graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     return graphToken;
-  } catch(e) {
+  } catch(e){
+    console.warn('[TOKEN] Popup failed:', e.message);
     graphToken = null;
     return null;
   }
