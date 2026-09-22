@@ -16,6 +16,45 @@
 
 <script>
 (function(){
+  console.log('[SESSION-CHECK] Checking for stored session...');
+
+  try {
+    const session = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+
+    if(!session || !session.name && !session.nursery){
+      console.log('[SESSION-CHECK] No valid session found');
+      console.log('[SESSION-CHECK] Redirecting to sign-in...');
+      window.location.href = '/issue-companion/signin.html';
+      return;
+    }
+
+    console.log('[SESSION-CHECK] Found session for:', session.name || session.nursery);
+    window.SESSION = session;
+
+    // Attempt to show dashboard
+    const modal = document.getElementById('identityModal');
+    if(modal){
+      console.log('[SESSION-CHECK] Hiding identity modal');
+      modal.classList.remove('active');
+    }
+
+    // Try to apply session
+    if(typeof applySession === 'function'){
+      console.log('[SESSION-CHECK] Calling applySession()');
+      applySession();
+    } else {
+      console.log('[SESSION-CHECK] applySession not found - waiting for page to load');
+    }
+
+  } catch(e){
+    console.error('[SESSION-CHECK] Error:', e.message);
+  }
+})();
+</script>
+
+
+<script>
+(function(){
   try {
     const session = JSON.parse(sessionStorage.getItem('icSession') || 'null');
     if(!session || !session.nursery && !session.name) {
