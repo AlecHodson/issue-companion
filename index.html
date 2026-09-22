@@ -1059,7 +1059,7 @@ function initMSAL(){
   return Promise.resolve();
 }
 
-async async function getGraphToken(){
+async function getGraphToken(){
   if(graphToken && Date.now() < tokenExpiry - 60000) return graphToken;
   const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
   if(!accounts.length) return null;
