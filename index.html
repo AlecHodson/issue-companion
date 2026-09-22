@@ -2071,6 +2071,9 @@ function applySearchHint(catId){
    INIT — ported from HR Companion (proven pattern)
    ================================================================ */
 
+// Populate dropdown immediately — no dependency on auth
+populateIdentitySelect();
+
 async function initAuth() {
   msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
   await msalInstance.initialize();
