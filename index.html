@@ -1091,31 +1091,7 @@ async function graphFetch(method, path, body){
   try { return JSON.parse(text); } catch(e) { return text; }
 }
 
-async function msalSignIn(){
-  document.getElementById('authError').style.display = 'none';
-  if(!msalInstance){
-    document.getElementById('authError').textContent = 'Authentication not ready — please refresh the page.';
-    document.getElementById('authError').style.display = 'block';
-    return;
-  }
-  try {
-    var loginHint = SESSION ? SESSION.email : '';
-    var resp;
-    try {
-      resp = await withTimeout(msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: loginHint }), 4000);
-    } catch(e){
-      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: loginHint });
-    }
-    graphToken = resp.accessToken;
-    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
-    document.getElementById('authOverlay').style.display = 'none';
-    if(!SESSION) await resolveIdentityFromGraph();
-  } catch(e) {
-    var err = document.getElementById('authError');
-    err.textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
-    err.style.display = 'block';
-  }
-}
+
 
 /* ================================================================
    SHAREPOINT DATA LAYER
@@ -2091,109 +2067,97 @@ function applySearchHint(catId){
 }
 
 /* ================================================================
-   INIT
+   INIT — ported from HR Companion (proven pattern)
    ================================================================ */
-// Populate immediately (sync)
-populateIdentitySelect();
-// Also on DOMContentLoaded and load as fallbacks
-document.addEventListener('DOMContentLoaded', function(){ populateIdentitySelect(); });
-window.addEventListener('load', function(){ populateIdentitySelect(); });
 
-function withTimeout(promise, ms){
-  return Promise.race([
-    promise,
-    new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('timeout')); }, ms); })
-  ]);
+async function initAuth() {
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  await msalInstance.initialize();
+
+  // Handle redirect response
+  try {
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp && resp.account) {
+      graphToken = resp.accessToken;
+      tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+      const user = matchUserByEmail(resp.account.username);
+      SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: resp.account.username};
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      return;
+    }
+  } catch(e) { console.warn('Redirect handle:', e); }
+
+  // Try Teams SSO first
+  if (typeof microsoftTeams !== 'undefined') {
+    try {
+      await microsoftTeams.app.initialize();
+      const ctx = await microsoftTeams.app.getContext();
+      const loginHint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
+      if (loginHint) {
+        try {
+          const silentResp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
+          graphToken = silentResp.accessToken;
+          tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now() + 3600000;
+          const user = matchUserByEmail(loginHint);
+          SESSION = user || {name: loginHint, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: loginHint};
+          document.getElementById('identityModal').classList.remove('active');
+          applySession();
+          return;
+        } catch(e) { console.warn('Teams SSO silent failed:', e); }
+      }
+    } catch(e) { console.warn('Teams init:', e); }
+  }
+
+  // Try silent from cached MSAL account
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const silentResp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+      graphToken = silentResp.accessToken;
+      tokenExpiry = silentResp.expiresOn ? silentResp.expiresOn.getTime() : Date.now() + 3600000;
+      const user = matchUserByEmail(accounts[0].username);
+      SESSION = user || {name: accounts[0].name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: accounts[0].username};
+      document.getElementById('identityModal').classList.remove('active');
+      applySession();
+      return;
+    } catch(e) { console.warn('Silent failed:', e); }
+  }
+
+  // All silent attempts failed — show identity picker
+  populateIdentitySelect();
+  document.getElementById('identityModal').classList.add('active');
+}
+
+async function msalSignIn() {
+  document.getElementById('idError').style.display = 'none';
+  try {
+    const loginHint = SESSION ? SESSION.email : '';
+    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    graphToken = resp.accessToken;
+    tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now() + 3600000;
+    const user = matchUserByEmail(resp.account.username);
+    SESSION = user || {name: resp.account.name, nursery:'Complete Childcare Group', title:'', isHR:false, canViewDashboard:false, email: resp.account.username};
+    document.getElementById('identityModal').classList.remove('active');
+    storeSession(SESSION);
+    applySession();
+  } catch(e) {
+    console.warn('Login popup failed:', e);
+    document.getElementById('idError').textContent = 'Sign-in failed: ' + (e.message || 'Unknown error');
+    document.getElementById('idError').style.display = 'block';
+  }
 }
 
 (async function(){
-
-  // ── Step 1: Try Teams SDK (with strict timeout so it never hangs) ──────────
-  var teamsUPN = null;
-  if(typeof microsoftTeams !== 'undefined'){
-    try {
-      await withTimeout(microsoftTeams.app.initialize(), 2000);
-      var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
-      // Teams SDK v2 requires explicit user info request
-      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
-      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
-    } catch(e){ teamsUPN = null; }
+  // Render app immediately so it's not a blank screen
+  applySession();
+  // Run auth
+  await initAuth();
+  // Load data if authenticated
+  if(graphToken){
+    renderDashboard();
+    renderMyIssues();
   }
-
-  if(teamsUPN){
-    var user = matchUserByEmail(teamsUPN);
-    if(user){
-      SESSION = user;
-      storeSession(SESSION);
-      document.getElementById('identityModal').classList.remove('active');
-      applySession();
-      // In Teams context: use loginPopup for automatic sign-in (no user interaction needed)
-      try {
-        var r = await withTimeout(
-          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint: teamsUPN }), 8000
-        );
-        graphToken = r.accessToken;
-        tokenExpiry = r.expiresOn ? r.expiresOn.getTime() : Date.now()+3600000;
-      } catch(e){
-        // If popup fails, fall back to showing connect button
-        console.warn('Teams auto sign-in failed:', e.message);
-        document.getElementById('authOverlay').style.display = 'flex';
-      }
-      return;
-    }
-  }
-
-  // ── Step 2: MSAL silent (cached token — works after first sign-in) ─────────
-  var accounts = msalInstance ? msalInstance.getAllAccounts() : [];
-  if(accounts.length){
-    try {
-      var r2 = await withTimeout(
-        msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] }), 5000
-      );
-      graphToken = r2.accessToken;
-      tokenExpiry = r2.expiresOn ? r2.expiresOn.getTime() : Date.now()+3600000;
-      await resolveIdentityFromGraph();
-      return;
-    } catch(e){ 
-      // Silent failed — try loginPopup as fallback
-      try {
-        var r2b = await withTimeout(
-          msalInstance.loginPopup({ scopes: GRAPH_SCOPES, account: accounts[0] }), 8000
-        );
-        graphToken = r2b.accessToken;
-        tokenExpiry = r2b.expiresOn ? r2b.expiresOn.getTime() : Date.now()+3600000;
-        await resolveIdentityFromGraph();
-        return;
-      } catch(e2){ /* both silent and popup failed */ }
-    }
-  }
-
-  // ── Step 3: Stored identity — try silent token, else show connect button ────
-  var stored = getStoredSession();
-  if(stored){
-    SESSION = stored;
-    document.getElementById('identityModal').classList.remove('active');
-    applySession();
-    // Try silent MSAL token using stored email so SharePoint works without a popup
-    if(msalInstance && stored.email){
-      try {
-        var r3 = await withTimeout(
-          msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: stored.email }), 4000
-        );
-        graphToken = r3.accessToken;
-        tokenExpiry = r3.expiresOn ? r3.expiresOn.getTime() : Date.now()+3600000;
-        return;
-      } catch(e){ /* silent failed — show connect button */ }
-    }
-    // Show non-blocking banner so user can connect M365 while seeing the app
-    const banner = document.getElementById('m365Banner');
-    if(banner) banner.style.display = 'flex';
-    return;
-  }
-
-  // ── Step 4: First visit — show picker and connect button ───────────────────
-  document.getElementById('identityModal').classList.add('active');
-  document.getElementById('authOverlay').style.display = 'flex';
 })();
 
 
