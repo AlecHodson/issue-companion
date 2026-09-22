@@ -370,6 +370,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <nav class="navlist" id="mgmtNavlist" style="display:none;">
       <button data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span> Dashboard</button>
       <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> All issues</button>
+      <button data-page="archived" onclick="showPage('archived',this)"><span class="nav-icon">&#128451;</span> Archived issues</button>
       <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
     </nav>
     <button class="sidebar-copilot-btn" onclick="openCopilotFromSidebar()">
@@ -1692,6 +1693,50 @@ async function renderAllIssues(){
     el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Could not load issues.</p>';
   }
 }
+
+function renderArchivedIssues(){
+  if(!(SESSION&&SESSION.canViewDashboard)){
+    const el=document.getElementById('archivedIssuesContent');
+    if(el) el.innerHTML='<p style="color:var(--red);font-size:13.5px;">Access restricted.</p>';
+    return;
+  }
+  showLoading('Loading archived issues...');
+  try {
+    const allIssues=await getAllIssues();
+    let issues=allIssues.filter(i=>i.archived);
+    const sev=document.getElementById('filterArchivedSeverity').value;
+    const stat=document.getElementById('filterArchivedStatus').value;
+    if(sev)issues=issues.filter(i=>i.governingRating===sev);
+    if(stat)issues=issues.filter(i=>i.status===stat);
+    if(!issues.length){
+      document.getElementById('archivedIssuesContent').innerHTML='<p style="color:var(--grey);font-size:13.5px;">No archived issues match the current filters.</p>';
+      hideLoading();
+      return;
+    }
+    const sorted=[...issues].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+    let html='<table class="log-table"><thead><tr><th>ID</th><th>Setting</th><th>Category</th><th>Severity</th><th>Status</th><th>Archived</th></tr></thead><tbody>';
+    sorted.forEach(i=>{
+      const d=new Date(i.updatedAt);
+      const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+      html+=`<tr style="opacity:0.7;">
+        <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
+        <td style="font-size:12.5px;">${i.nursery}</td>
+        <td style="font-size:12.5px;">${i.catName}</td>
+        <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
+        <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
+        <td style="font-size:12px;color:var(--amber);">✓ ${ds}</td>
+      </tr>`;
+      if(i.desc){html+=`<tr style="opacity:0.7;"><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
+    });
+    html+='</tbody></table>';
+    document.getElementById('archivedIssuesContent').innerHTML=html;
+  } catch(e){
+    document.getElementById('archivedIssuesContent').innerHTML='<p style="color:var(--red);font-size:13px;">Error loading archived issues: '+e.message+'</p>';
+  } finally {
+    hideLoading();
+  }
+}
+
 
 /* ================================================================
    DASHBOARD
