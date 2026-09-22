@@ -2046,8 +2046,11 @@ function withTimeout(promise, ms){
       await withTimeout(microsoftTeams.app.initialize(), 2000);
       var ctx = await withTimeout(microsoftTeams.app.getContext(), 2000);
       // Teams SDK v2 requires explicit user info request
-      teamsUPN = ctx && ctx.user && ctx.user.userPrincipalName;
-      if(!teamsUPN && ctx && ctx.loginHint) teamsUPN = ctx.loginHint;
+      // Teams SDK v2 doesn't reliably expose userPrincipalName
+      // Instead, use stored session email as loginHint for ssoSilent
+      teamsUPN = null;
+      const stored = getStoredSession();
+      if(stored && stored.email) teamsUPN = stored.email;
     } catch(e){ teamsUPN = null; }
   }
 
