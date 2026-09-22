@@ -15,6 +15,24 @@
 <body>
 
 <script>
+(function(){
+  try {
+    const session = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+    if(!session || !session.nursery && !session.name) {
+      console.log('[CHECK] No session found, redirecting to signin...');
+      window.location.href = '/issue-companion/signin.html';
+      return;
+    }
+    console.log('[CHECK] Session found:', session.name || session.nursery);
+  } catch(e) {
+    console.log('[CHECK] Session check error:', e.message);
+    window.location.href = '/issue-companion/signin.html';
+  }
+})();
+</script>
+
+
+<script>
 (async function(){
   console.log('[AUTO] Page loaded, attempting auto-signin via Teams...');
 
