@@ -302,18 +302,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 </style>
 
   <script>
-    // IMMEDIATE: Check for stored session and auto-sign-in
-    (function(){
-      try {
-        const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
-        if(stored && (stored.name || stored.nursery)){
-          console.log('[IC-INLINE] Auto-signing in:', stored.name || stored.nursery);
-          window.AUTO_SESSION = stored;
-        }
-      } catch(e) {
-        console.log('[IC-INLINE] No stored session');
-      }
-    })();
+    
   </script>
 </head>
 <body>
@@ -754,6 +743,52 @@ const MGMT_LIST = [
   {name:"Alec Hodson",nursery:"Head Office",title:"Group Chief Executive",isHR:true,canViewDashboard:true,zone:"all",email:"alec.hodson@completechildcare.co.uk"},
   {name:"Louise Medley",nursery:"Head Office",title:"EA to Group CEO",isHR:true,canViewDashboard:true,zone:"all",email:"louise.medley@completechildcare.co.uk"},
 ];
+
+// ===== POPULATE AFTER LISTS DEFINED =====
+(function(){
+  function populateNow(){
+    const sel = document.getElementById('idSelect');
+    if(!sel){
+      console.log('[POPULATE] idSelect not found, retrying...');
+      setTimeout(populateNow, 100);
+      return;
+    }
+
+    console.log('[POPULATE] Starting with', NURSERY_LIST.length, 'nurseries and', MGMT_LIST.length, 'managers');
+
+    sel.innerHTML = '<option value="">— Select your nursery or name —</option>';
+
+    const ng = document.createElement('optgroup');
+    ng.label = 'Nurseries';
+    NURSERY_LIST.forEach((u, i) => {
+      const o = document.createElement('option');
+      o.value = 'n:' + i;
+      o.textContent = u.nursery;
+      ng.appendChild(o);
+    });
+    sel.appendChild(ng);
+    console.log('[POPULATE] Added nurseries');
+
+    const mg = document.createElement('optgroup');
+    mg.label = 'Management & Head Office';
+    MGMT_LIST.forEach((u, i) => {
+      const o = document.createElement('option');
+      o.value = 'm:' + i;
+      o.textContent = u.name + ' — ' + u.title;
+      mg.appendChild(o);
+    });
+    sel.appendChild(mg);
+    console.log('[POPULATE] SUCCESS:', sel.options.length, 'options');
+  }
+
+  // Wait for DOM
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', populateNow);
+  } else {
+    populateNow();
+  }
+})();
+
 // ─── SOURCE CITATION HELPER ──────────────────────────────────────────────────
 function sourcesPanel(sources) {
   const icons = { ccg:'📄', acas:'⚖️', gov:'🏛️' };
@@ -2279,91 +2314,7 @@ function sendChatMessage(){
 }
 
 
-// ===== BULLETPROOF POPULATE =====
-function populateIdentitySelectNow(){
-  const sel = document.getElementById('idSelect');
-  if(!sel){
-    console.log('[IC-BP] ERROR: idSelect not found');
-    return;
-  }
 
-  if(!NURSERY_LIST || !MGMT_LIST){
-    console.log('[IC-BP] ERROR: Lists not defined yet, retrying...');
-    return false;
-  }
-
-  console.log('[IC-BP] Populating with', NURSERY_LIST.length, 'nurseries and', MGMT_LIST.length, 'managers');
-
-  sel.innerHTML = '<option value="">— Select your nursery or name —</option>';
-
-  const ng = document.createElement('optgroup');
-  ng.label = 'Nurseries';
-  NURSERY_LIST.forEach((u, i) => {
-    const o = document.createElement('option');
-    o.value = 'n:' + i;
-    o.textContent = u.nursery;
-    ng.appendChild(o);
-  });
-  sel.appendChild(ng);
-
-  const mg = document.createElement('optgroup');
-  mg.label = 'Management & Head Office';
-  MGMT_LIST.forEach((u, i) => {
-    const o = document.createElement('option');
-    o.value = 'm:' + i;
-    o.textContent = u.name + ' — ' + u.title;
-    mg.appendChild(o);
-  });
-  sel.appendChild(mg);
-
-  console.log('[IC-BP] SUCCESS: Populated', sel.options.length, 'options');
-  return true;
-}
-
-// Try to populate on DOMContentLoaded
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('[IC-BP] DOMContentLoaded fired');
-    populateIdentitySelectNow();
-  });
-} else {
-  console.log('[IC-BP] DOM already ready');
-  populateIdentitySelectNow();
-}
-
-// Retry every 200ms for 10 seconds if lists haven't loaded
-let retries = 0;
-const retryInterval = setInterval(() => {
-  retries++;
-  const sel = document.getElementById('idSelect');
-
-  if(!sel){
-    console.log('[IC-BP] Retry', retries, ': select element not found');
-    if(retries > 50) clearInterval(retryInterval);
-    return;
-  }
-
-  // If already populated, stop retrying
-  if(sel.options.length > 1){
-    console.log('[IC-BP] Already populated, stopping retries');
-    clearInterval(retryInterval);
-    return;
-  }
-
-  // Try to populate
-  const success = populateIdentitySelectNow();
-  if(success){
-    console.log('[IC-BP] Success on retry', retries);
-    clearInterval(retryInterval);
-  } else {
-    console.log('[IC-BP] Retry', retries, ': lists not ready yet');
-  }
-
-  if(retries > 50){
-    console.log('[IC-BP] Gave up after 50 retries');
-    clearInterval(retryInterval);
-  }
-}, 200);
 </script>
 </body>
 </html>
