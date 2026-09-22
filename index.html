@@ -677,9 +677,9 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 
 
 <!-- M365 connect banner - shows when graph token missing -->
-<div id="m365Banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#764ba2;color:white;padding:10px 20px;z-index:9999;display:flex;align-items:center;justify-content:space-between;font-size:13px;">
-  <span>⚠ Connect to Microsoft 365 to load and save issues from SharePoint</span>
-  <button onclick="msalSignIn();document.getElementById('m365Banner').style.display='none';" style="background:white;color:#764ba2;border:none;padding:6px 14px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px;">Connect M365</button>
+<div id="m365Banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#764ba2;color:white;padding:10px 20px;z-index:9999;align-items:center;justify-content:space-between;font-size:13px;">
+  <span>&#9888; Connect to Microsoft 365 to load and save issues from SharePoint</span>
+  <button id="m365BannerBtn" style="background:white;color:#764ba2;border:none;padding:6px 14px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px;">Connect M365</button>
 </div>
 
 <div class="auth-overlay" id="authOverlay" style="display:none;">
@@ -2293,5 +2293,17 @@ function sendChatMessage(){
   }, 600);
 }
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.getElementById('m365BannerBtn');
+  if(btn){
+    btn.addEventListener('click', function(){
+      msalSignIn();
+      document.getElementById('m365Banner').style.display = 'none';
+    });
+  }
+});
+</script>
+
 </body>
 </html>
