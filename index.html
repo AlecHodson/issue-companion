@@ -1290,7 +1290,7 @@ async function sendEmail(to, subject, htmlBody){
 }
 
 function issueEmailBody(issue, extraMsg){
-  const url = window.location.href.split('?')[0];
+  const url = window.location.href.split('?')[0] + '?issue=' + issue.id;
   return `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
   <div style="background:#3B1F6A;padding:18px 24px;border-radius:8px 8px 0 0;">
@@ -1304,7 +1304,7 @@ function issueEmailBody(issue, extraMsg){
     <p style="margin:0 0 16px;"><strong>Logged by:</strong> ${issue.loggedBy}</p>
     ${extraMsg ? '<div style="background:#EDE8F5;border-left:3px solid #5a2f85;padding:12px 16px;border-radius:0 6px 6px 0;margin-bottom:16px;">' + extraMsg + '</div>' : ''}
     <p style="margin:0 0 16px;"><strong>Original description:</strong><br/>${(issue.desc||'').replace(/\n/g,'<br/>')}</p>
-    <a href="${url}" style="display:inline-block;background:#3B1F6A;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Open Issue Companion</a>
+    <a href="${url}" style="display:inline-block;background:#3B1F6A;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:600;">View This Issue</a>
     <p style="margin:16px 0 0;font-size:11px;color:#888;">This is an automated notification from the CCG Issue Companion. Please do not reply to this email — use the Issue Companion to respond.</p>
   </div>
 </div>`;
@@ -2221,6 +2221,10 @@ function confirmIdentity() {
   applySession();
   renderDashboard();
   renderMyIssues();
+  // Deep-link: open specific issue after manual sign-in
+  const _p = new URLSearchParams(window.location.search);
+  const _id = _p.get('issue');
+  if(_id){ setTimeout(() => openIssueDetail(_id, 'myissues'), 800); }
 }
 
 function clearIdentity() {
@@ -2239,6 +2243,10 @@ function clearIdentity() {
       SESSION = stored;
     }
   } catch(e){}
+
+  // Check for deep-link issue parameter (?issue=ISS-xxx)
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _deepLinkIssueId = _urlParams.get('issue');
 
   // 2. Try MSAL silent auth (works if user has cached M365 session)
   if(msalInstance){
@@ -2289,6 +2297,10 @@ function clearIdentity() {
     applySession();
     if(typeof renderDashboard === 'function') renderDashboard();
     if(typeof renderMyIssues === 'function') renderMyIssues();
+    // Deep-link: open specific issue if ?issue= param present
+    if(_deepLinkIssueId){
+      setTimeout(() => openIssueDetail(_deepLinkIssueId, 'myissues'), 800);
+    }
     return;
   }
 
