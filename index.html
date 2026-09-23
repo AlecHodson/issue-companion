@@ -223,9 +223,9 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 .sr-cat-pill:hover{border-color:var(--purple-mid);background:var(--purple-tint);color:var(--purple-deep);}
 
 /* ===== CRITICAL PANIC BUTTON ===== */
-.panic-btn{position:fixed;top:50%;left:calc(260px + (100vw - 260px) / 2);transform:translate(-50%,-50%);background:var(--red);color:#fff;border:none;border-radius:30px;padding:18px 40px;font-family:var(--font-body);font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 8px 32px rgba(183,28,28,0.6);display:flex;align-items:center;gap:12px;z-index:9999;animation:panic-pulse 2s infinite;}
+.panic-btn{position:fixed;bottom:24px;left:calc(260px + (100vw - 260px) / 2);transform:translateX(-50%);background:var(--red);color:#fff;border:none;border-radius:30px;padding:18px 40px;font-family:var(--font-body);font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 8px 32px rgba(183,28,28,0.6);display:flex;align-items:center;gap:12px;z-index:9999;animation:panic-pulse 2s infinite;}
 @keyframes panic-pulse{0%,100%{box-shadow:0 4px 20px rgba(183,28,28,0.55);}50%{box-shadow:0 4px 32px rgba(183,28,28,0.9);}}
-.panic-btn:hover{transform:translate(-50%,-50%) scale(1.07);}
+.panic-btn:hover{transform:translateX(-50%) scale(1.07);}
 .panic-btn:hover{background:#8B0000;}
 .panic-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
 
