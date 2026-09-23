@@ -618,6 +618,33 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     </div>
 
     <!-- ===== ROUTING MATRIX (management) ===== -->
+    <div class="page" id="page-archived">
+      <div class="page-header">
+        <div class="page-eyebrow">Management view</div>
+        <h1>Archived issues</h1>
+        <p>Issues that have been resolved and archived.</p>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="filterArchivedSeverity" onchange="renderArchivedIssues()" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;">
+            <option value="">All severities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+          <select id="filterArchivedStatus" onchange="renderArchivedIssues()" style="padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:white;">
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="open">Open</option>
+            <option value="actioned">Actioned</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        <div id="archivedIssuesContent"><p style="color:var(--grey);font-size:13.5px;">Loading archived issues...</p></div>
+      </div>
+    </div>
+
     <div class="page" id="page-routing">
       <div class="page-header">
         <div class="page-eyebrow">Management view</div>
@@ -1317,7 +1344,7 @@ function showPage(id, btn){
   previousPage = document.querySelector('.page.active')?.id?.replace('page-','') || 'log';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navlist button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  const _pg = document.getElementById('page-'+id); if(_pg) _pg.classList.add('active'); else { console.warn('No page div for:', id); return; }
   if(btn) btn.classList.add('active');
   if(id==='myissues') renderMyIssues();
   if(id==='dashboard') renderDashboard();
