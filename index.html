@@ -1797,7 +1797,7 @@ async function renderArchivedIssues(){
     sorted.forEach(i=>{
       const d=new Date(i.updatedAt);
       const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-      html+=`<tr style="opacity:0.7;">
+      html+=`<tr style="opacity:0.7;cursor:pointer;" onclick="openIssueDetail('${i.id}','archived')" title="Click to view full issue">
         <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
         <td style="font-size:12.5px;">${i.nursery}</td>
         <td style="font-size:12.5px;">${i.catName}</td>
