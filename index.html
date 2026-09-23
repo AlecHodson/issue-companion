@@ -223,7 +223,9 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 .sr-cat-pill:hover{border-color:var(--purple-mid);background:var(--purple-tint);color:var(--purple-deep);}
 
 /* ===== CRITICAL PANIC BUTTON ===== */
-.panic-btn{position:fixed;right:24px;bottom:24px;background:var(--red);color:#fff;border:none;border-radius:30px;padding:14px 20px;font-family:var(--font-body);font-weight:700;font-size:13.5px;cursor:pointer;box-shadow:0 10px 26px -8px rgba(183,28,28,.55);display:flex;align-items:center;gap:9px;z-index:100;}
+.panic-btn{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;border:none;border-radius:30px;padding:14px 32px;font-family:var(--font-body);font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 4px 20px rgba(183,28,28,0.55);display:flex;align-items:center;gap:9px;z-index:9999;animation:panic-pulse 2s infinite;}
+@keyframes panic-pulse{0%,100%{box-shadow:0 4px 20px rgba(183,28,28,0.55);}50%{box-shadow:0 4px 32px rgba(183,28,28,0.9);}}
+.panic-btn:hover{transform:translateX(-50%) scale(1.05);}
 .panic-btn:hover{background:#8B0000;}
 .panic-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
 
