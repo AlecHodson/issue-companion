@@ -1797,15 +1797,15 @@ async function renderArchivedIssues(){
     sorted.forEach(i=>{
       const d=new Date(i.updatedAt);
       const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-      html+=`<tr style="opacity:0.7;cursor:pointer;" onclick="openIssueDetail('${i.id}','archived')" title="Click to view full issue">
-        <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
+      html+=`<tr style="opacity:0.7;">
+        <td style="font-family:var(--font-mono);font-size:11px;"><button onclick="openIssueDetail('${i.id}','archived')" style="background:none;border:none;color:var(--purple-deep);cursor:pointer;font-family:var(--font-mono);font-size:11px;text-decoration:underline;padding:0;">${i.id.slice(-8)}</button></td>
         <td style="font-size:12.5px;">${i.nursery}</td>
         <td style="font-size:12.5px;">${i.catName}</td>
         <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
         <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
-        <td style="font-size:12px;color:var(--amber);">✓ ${ds}</td>
+        <td style="font-size:12px;color:var(--amber);"><button onclick="openIssueDetail('${i.id}','archived')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:12px;padding:0;">✓ ${ds} &#8250;</button></td>
       </tr>`;
-      if(i.desc){html+=`<tr style="opacity:0.7;cursor:pointer;" onclick="openIssueDetail('${i.id}','archived')" title="Click to view full issue"><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
+      if(i.desc){html+=`<tr style="opacity:0.7;"><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
     });
     html+='</tbody></table>';
     document.getElementById('archivedIssuesContent').innerHTML=html;
