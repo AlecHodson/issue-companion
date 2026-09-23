@@ -374,7 +374,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <div class="nav-section" id="mgmtNavSection" style="display:none;">Management</div>
     <nav class="navlist" id="mgmtNavlist" style="display:none;">
       <button data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">&#128202;</span> Dashboard</button>
-      <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> All issues</button>
+      <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> Current issues</button>
       <button data-page="archived" onclick="showPage('archived',this)"><span class="nav-icon">&#128451;</span> Archived issues</button>
       <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
     </nav>
@@ -593,8 +593,8 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <div class="page" id="page-allissues">
       <div class="page-header">
         <div class="page-eyebrow">Management view</div>
-        <h1>All issues</h1>
-        <p>Every issue logged across all settings. Filter by severity or status.</p>
+        <h1>Current issues</h1>
+        <p>Every current (non-archived) issue across all settings. Filter by severity or status.</p>
       </div>
       <div class="card">
         <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -1797,13 +1797,13 @@ async function renderArchivedIssues(){
     sorted.forEach(i=>{
       const d=new Date(i.updatedAt);
       const ds=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-      html+=`<tr style="opacity:0.7;">
-        <td style="font-family:var(--font-mono);font-size:11px;"><button onclick="openIssueDetail('${i.id}','archived')" style="background:none;border:none;color:var(--purple-deep);cursor:pointer;font-family:var(--font-mono);font-size:11px;text-decoration:underline;padding:0;">${i.id.slice(-8)}</button></td>
+      html+=`<tr style="opacity:0.7;cursor:pointer;" onclick="openIssueDetail('${i.id}','archived')" title="Click to view full issue">
+        <td style="font-family:var(--font-mono);font-size:11px;">${i.id.slice(-8)}</td>
         <td style="font-size:12.5px;">${i.nursery}</td>
         <td style="font-size:12.5px;">${i.catName}</td>
         <td><span class="badge badge-${i.governingRating}">${LEVEL_LABEL[i.governingRating]||i.governingRating}</span></td>
         <td><span class="badge badge-${i.status}">${i.status.charAt(0).toUpperCase()+i.status.slice(1)}</span></td>
-        <td style="font-size:12px;color:var(--amber);"><button onclick="openIssueDetail('${i.id}','archived')" style="background:none;border:none;color:var(--amber);cursor:pointer;font-size:12px;padding:0;">✓ ${ds} &#8250;</button></td>
+        <td style="font-size:12px;color:var(--amber);">✓ ${ds}</td>
       </tr>`;
       if(i.desc){html+=`<tr style="opacity:0.7;"><td colspan="6" style="padding:0 12px 12px;font-size:12px;color:var(--grey);">${i.desc.slice(0,200)}${i.desc.length>200?'…':''}</td></tr>`;}
     });
