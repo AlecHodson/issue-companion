@@ -1133,7 +1133,8 @@ async function getGraphToken(){
 
   // 3. Popup fallback (may be blocked in Teams — user must allow)
   try {
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    const resp = await msalLoginWithTeamsFallback(GRAPH_SCOPES, loginHint);
+    if(!resp) return; // redirect flow — page is navigating
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     console.log('[TOKEN] Got token via popup');
@@ -2158,6 +2159,19 @@ function applySearchHint(catId){
 /* ================================================================
    AUTH — MSAL-first, manual picker fallback
    ================================================================ */
+
+
+// Detect Teams and use appropriate sign-in method
+async function msalLoginWithTeamsFallback(scopes, loginHint) {
+  const inTeams = typeof microsoftTeams !== 'undefined' && window.parent !== window;
+  if (inTeams) {
+    // Teams blocks popups — use redirect instead
+    await msalInstance.loginRedirect({ scopes, loginHint, prompt: 'select_account' });
+    return null; // page will redirect, no return value
+  } else {
+    return await msalInstance.loginPopup({ scopes, loginHint });
+  }
+}
 
 async function msalSignIn() {
   const statusEl = document.getElementById('idStatus');
