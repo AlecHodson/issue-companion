@@ -1713,7 +1713,7 @@ async function renderAllIssues(){
   }
   el.innerHTML='<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
   try {
-    let issues=(await getAllIssues()).filter(i=>!i.archived);
+    let issues=(await getAllIssues()).filter(i=>!i.archived&&i.archived!==true&&i.archived!=="true"&&i.archived!==1);
     const sev=document.getElementById('filterSeverity').value;
     const stat=document.getElementById('filterStatus').value;
     if(sev) issues=issues.filter(i=>i.governingRating===sev);
@@ -1750,9 +1750,9 @@ async function renderArchivedIssues(){
   try {
     const allIssues=await getAllIssues();
     console.log('[ARCHIVE] Total issues:', allIssues.length);
-    allIssues.forEach(i => console.log('[ARCHIVE]', i.id, 'archived=', JSON.stringify(i.archived)));
-    // Managers see all archived; nursery users see only their own nursery
-    let issues=allIssues.filter(i=>i.archived);
+    allIssues.forEach(i => console.log('[ARCHIVE]', i.id.slice(-8), 'archived=', JSON.stringify(i.archived), typeof i.archived));
+    // archived can be true (boolean) or "true" (string) - handle both
+    let issues=allIssues.filter(i=>i.archived===true||i.archived==='true'||i.archived===1);
     if(!SESSION.canViewDashboard){
       issues=issues.filter(i=>i.nursery===SESSION.nursery);
     }
