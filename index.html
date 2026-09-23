@@ -699,18 +699,16 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
 /* ================================================================
    CONFIG
    ================================================================ */
-const CLIENT_ID = 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a';
-const TENANT_ID = 'c498c1f7-99ac-42e6-bd6f-e819bf40f167';
 const MSAL_CONFIG = {
   auth: {
-    clientId: CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
-    redirectUri: 'https://alechodson.github.io/hr-companion/',
+    clientId: 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a',
+    authority: 'https://login.microsoftonline.com/c498c1f7-99ac-42e6-bd6f-e819bf40f167',
+    redirectUri: 'https://alechodson.github.io/issue-companion/',
     navigateToLoginRequestUrl: false
   },
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
 };
-const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite', 'Mail.Send', 'Sites.Read.All'];
+const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.All', 'Mail.Send'];
 const DRIVE_ID = 'b!iJr5xECL0UOQJ9Tvhe9ldRBI2wy_aKhHrZwoRpGOclMsrpjKrYXdToViItPPv4Fn';
 const ISSUES_PATH = 'IssueCompanion/issues';
 const COMMENTS_PATH = 'IssueCompanion/comments';
