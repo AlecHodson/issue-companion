@@ -312,12 +312,19 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
     <h2>Issue Companion</h2>
     <p style="font-size:13px;color:#666;margin-bottom:16px;">Log, triage and resolve operational issues.</p>
     <div id="idStatus" style="font-size:13px;color:#888;margin-bottom:12px;min-height:18px;"></div>
-    <button class="id-btn" onclick="msalSignIn()" style="width:100%;margin-bottom:16px;">Sign in with Microsoft 365</button>
-    <div style="border-top:1px solid #eee;padding-top:14px;">
-      <p style="font-size:11px;color:#aaa;margin:0 0 8px;">Or select manually if sign-in is unavailable:</p>
+
+    <!-- Primary: dropdown (shown in Teams, hidden in browser until M365 fails) -->
+    <div id="pickerSection">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Select your name</label>
       <select id="idSelect" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:13px;background:white;margin-bottom:10px;"><option value="">-- Select your name --</option></select>
-      <button class="id-btn" onclick="confirmIdentity()" style="width:100%;">Continue without sign-in</button>
+      <button class="id-btn" id="confirmBtn" onclick="confirmIdentity()" style="width:100%;margin-bottom:12px;">Sign In</button>
     </div>
+
+    <!-- Secondary: M365 button (shown in browser, hidden in Teams) -->
+    <div id="m365Section" style="border-top:1px solid #eee;padding-top:12px;">
+      <button class="id-btn" onclick="msalSignIn()" style="width:100%;background:#0078d4;">Sign in with Microsoft 365</button>
+    </div>
+
     <div class="id-error" id="idError" style="display:none;color:#ef4444;font-size:13px;margin-top:10px;"></div>
   </div>
 </div>
@@ -2288,6 +2295,30 @@ function clearIdentity() {
   // 4. No session — show modal with populated picker
   populateIdentitySelect();
   document.getElementById('identityModal').classList.add('active');
+
+  // Detect Teams and adjust modal: in Teams, picker is primary; in browser, M365 is primary
+  const inTeams = window.parent !== window || window.self !== window.top;
+  const pickerSection = document.getElementById('pickerSection');
+  const m365Section = document.getElementById('m365Section');
+  if(inTeams){
+    // Teams: picker is primary (full width, no border), hide M365 button
+    if(m365Section) m365Section.style.display = 'none';
+    if(pickerSection) pickerSection.style.borderTop = 'none';
+  } else {
+    // Browser: M365 is primary, picker is secondary fallback
+    if(pickerSection){
+      pickerSection.style.borderTop = '1px solid #eee';
+      pickerSection.style.paddingTop = '12px';
+      const lbl = pickerSection.querySelector('label');
+      if(lbl) lbl.textContent = 'Or select manually if sign-in is unavailable:';
+      if(lbl) lbl.style.color = '#aaa';
+      if(lbl) lbl.style.fontWeight = '400';
+      if(lbl) lbl.style.textTransform = 'none';
+      if(lbl) lbl.style.letterSpacing = '0';
+      const btn = document.getElementById('confirmBtn');
+      if(btn) btn.textContent = 'Continue without sign-in';
+    }
+  }
 })();
 
 
