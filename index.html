@@ -1117,7 +1117,6 @@ var msalInstance = null;
               if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); return; }
             } catch(e){
               console.warn('[MSAL] Teams ssoSilent failed:', e.message);
-              // Fall through to redirect
               try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint, prompt: 'none' }); return; } catch(e2){}
               try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint }); return; } catch(e3){}
             }
