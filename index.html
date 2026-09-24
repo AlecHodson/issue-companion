@@ -2440,7 +2440,27 @@ async function msalSignIn() {
     // Step 3: Interactive — redirect in Teams, popup in browser
     if(!resp){
       if(inTeams){
-        await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint, redirectUri: 'https://alechodson.github.io/issue-companion/' });
+        // In Teams, loginRedirect/loginPopup both fail — try to get Teams UPN and match identity
+        try {
+          await microsoftTeams.app.initialize();
+          const ctx = await microsoftTeams.app.getContext();
+          const teamsHint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
+          if(teamsHint){
+            const user = matchUserByEmail(teamsHint);
+            if(user){
+              SESSION = user;
+              try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
+              document.getElementById('identityModal').classList.remove('active');
+              applySession();
+              if(typeof renderDashboard === 'function') renderDashboard();
+              if(typeof renderMyIssues === 'function') renderMyIssues();
+              return;
+            }
+          }
+        } catch(e){ console.warn('[MSAL] Teams identity fallback failed:', e.message); }
+        // If Teams identity match also failed, show manual picker — do NOT redirect
+        if(statusEl) statusEl.textContent = 'Auto sign-in unavailable in Teams — please select your name below.';
+        populateIdentitySelect();
         return;
       } else {
         if(statusEl) statusEl.textContent = 'Opening Microsoft sign-in...';
@@ -2527,23 +2547,33 @@ function clearIdentity() {
       await msalInstance.handleRedirectPromise();
     } catch(e){}
 
-    // Try Teams SSO silent first
+    // Try Teams SSO — get UPN from Teams context, match against user list
     if(typeof microsoftTeams !== 'undefined'){
       try {
         await microsoftTeams.app.initialize();
         const ctx = await microsoftTeams.app.getContext();
         const hint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
         if(hint){
-          const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
-          graphToken = resp.accessToken;
-          tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+          // Step A: Try MSAL ssoSilent for a Graph token
+          try {
+            const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
+            graphToken = resp.accessToken;
+            tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+            console.log('[INIT] Got token via Teams ssoSilent');
+          } catch(e){ console.warn('[INIT] Teams ssoSilent failed (expected) — using identity-only sign-in:', e.message); }
+
+          // Step B: Whether or not we got a token, match the Teams UPN to a known user
+          // This allows sign-in in Teams even when MSAL interactive auth is blocked
           if(!SESSION || !SESSION.email){
             const user = matchUserByEmail(hint);
-            if(user) SESSION = user;
+            if(user){
+              SESSION = user;
+              try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
+              console.log('[INIT] Teams identity matched to user:', SESSION.name);
+            }
           }
-          console.log('[INIT] Got token via Teams ssoSilent');
         }
-      } catch(e){ console.warn('[INIT] Teams SSO failed:', e.message); }
+      } catch(e){ console.warn('[INIT] Teams SDK failed:', e.message); }
     }
 
     // Try cached account silent
