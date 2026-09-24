@@ -868,14 +868,14 @@ const COPILOT_KB = {
     sources: [{label:'CCG H&S Handbook 2026', url:'https://completechildcare.sharepoint.com/sites/TheKnowledgeBase/Shared%20Documents/Handbook%20H%26S%202026.pdf', type:'ccg'}, {label:'CCG Employee Handbook', url:'https://completechildcare.sharepoint.com/sites/HRFiling/_layouts/15/Doc.aspx?sourcedoc=%7BEB8FAA88-B5C0-401F-9235-C230195A9139%7D&file=Employment%20Law%20Employee%20Handbook%20PDF%20Jan26.pdf&action=default&mobileredirect=true', type:'ccg'}, {label:'Gov.uk: EYFS Statutory Framework', url:'https://www.gov.uk/government/publications/early-years-foundation-stage-framework--2', type:'gov'}, {label:'ACAS: Performance management', url:'https://www.acas.org.uk/performance-management', type:'acas'}, {label:'Ofsted: Inspecting safeguarding in early years', url:'https://www.gov.uk/government/publications/inspecting-safeguarding-in-early-years-education-and-skills', type:'gov'}]
   },
   "05": {
-    policy: "All premises defects must be reported to the maintenance log on the day they are identified. Any defect that creates an immediate risk (structural, electrical, water ingress, heating failure in winter) must be treated as urgent and reported to the Estates lead (Alec Hodson) the same day. Contractors must be managed in line with the Contractor Management Policy — ID checked, induction completed, work supervised.",
+    policy: "All premises defects must be logged in MaintainX (https://app.getmaintainx.com/workorders/) on the day they are identified — this is the primary maintenance management system. Any defect that creates an immediate risk (structural, electrical, water ingress, heating failure in winter) must be treated as urgent and reported to Simon Hasler (Maintenance) and your Area Manager the same day. Critical or emergency issues should also be escalated to Alec Hodson. Contractors must be managed in line with the Contractor Management Policy — ID checked, induction completed, work supervised.",
     source: "CCG Premises and Maintenance Procedure, Section 2.1",
     steps: [
-      "Log the defect in the premises maintenance record with a photograph if possible.",
-      "Assess whether the defect creates an immediate risk — if yes, close the affected area immediately.",
-      "Contact your maintenance contractor for an urgent callout if the risk is immediate.",
-      "Notify your Area Manager and Alec Hodson (Estates) if the issue cannot be made safe today.",
-      "Do not allow children or staff into an area that cannot be made safe."
+      "Log the defect in MaintainX immediately — go to https://app.getmaintainx.com/workorders/ and create a new work order with a photograph if possible.",
+      "Assess whether the defect creates an immediate risk — if yes, close the affected area immediately and do not allow children or staff in.",
+      "Contact Simon Hasler (Maintenance) and your Area Manager — they will coordinate the response.",
+      "For critical or emergency issues (gas, structural, flood, electrical) also notify Alec Hodson directly.",
+      "Contact your maintenance contractor for an urgent callout if the risk is immediate and cannot wait."
     ],
     criticalKeywords: ["structural damage","ceiling collapse","gas leak","flood","electrical fault","heating failure","boiler","no hot water in winter","fire door"],
     highKeywords: ["broken equipment","leak","damp","mould","pest","door not locking","window broken","playground hazard"],
@@ -943,7 +943,7 @@ const ROUTING = {
   "02": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
   "03": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
   "04": {tier2:"Area Manager + Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
-  "05": {tier2:"Area Manager",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson (Estates)"},
+  "05": {tier2:"Area Manager + Simon Hasler (Maintenance)",tier3:"Simon Hasler (Maintenance)",tier4:"Alec Hodson (Critical/Emergency only)"},
   "06": {tier2:"Ellie Richards (Compliance)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
   "07": {tier2:"Alec Hodson (DPO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
   "08": {tier2:"Area Manager + Emma McIntyre (CCO)",tier3:"Emma McIntyre (CCO)",tier4:"Alec Hodson"},
@@ -1661,7 +1661,16 @@ async function notifyOnSubmit(issue){
   const recipients=[];
   // Always notify the relevant area manager
   const amEmail = issue.zone==='BlueWater' ? 'pav.bilkhu@completechildcare.co.uk' : 'Leanne.Maynard@completechildcare.co.uk';
-  if(level==='critical'||level==='high'){
+
+  if(issue.cat==='05'){
+    // Premises & maintenance: Simon Hasler + Area Manager always; Alec only if critical/emergency
+    recipients.push('Simon.hasler@completechildcare.co.uk');
+    recipients.push(amEmail);
+    if(level==='critical'||level==='emergency'){
+      recipients.push('alec.hodson@completechildcare.co.uk');
+      recipients.push('louise.medley@completechildcare.co.uk');
+    }
+  } else if(level==='critical'||level==='high'){
     recipients.push('alec.hodson@completechildcare.co.uk');
     recipients.push('Emma.McIntyre@completechildcare.co.uk');
     recipients.push('louise.medley@completechildcare.co.uk');
