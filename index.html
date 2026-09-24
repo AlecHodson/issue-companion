@@ -586,6 +586,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
         <div class="page-eyebrow">Management view</div>
         <h1>Dashboard</h1>
         <p>Group-wide issue summary. Data updates as issues are logged.</p>
+        <button id="summaryReportBtn" onclick="generateSummaryReport()" style="margin-top:14px;background:var(--purple-deep);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);">Email summary report</button>
       </div>
       <div class="kpi-grid" id="kpiGrid"></div>
       <div class="card">
@@ -1867,6 +1868,188 @@ async function renderArchivedIssues(){
 /* ================================================================
    DASHBOARD
    ================================================================ */
+async 
+async function generateSummaryReport() {
+  const btn = document.getElementById('summaryReportBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Generating...'; }
+  try {
+    const issues = await getAllIssues();
+    if(!issues || !issues.length){
+      alert('No issues found to report.');
+      return;
+    }
+
+    const now = new Date();
+    const fmt = d => new Date(d).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+    const fmtDur = ms => {
+      if(ms < 0) return '—';
+      const h = Math.round(ms/3600000);
+      if(h < 48) return h + 'h';
+      return Math.round(h/24) + 'd';
+    };
+
+    // ── Compute stats ──────────────────────────────────────────────────────
+    const total = issues.length;
+    const open = issues.filter(i => i.status !== 'closed' && !i.archived);
+    const closed = issues.filter(i => i.status === 'closed');
+    const archived = issues.filter(i => i.archived);
+
+    // Time to close (ms) for closed issues
+    const closedWithTime = closed.filter(i => i.createdAt && i.updatedAt);
+    const avgCloseMs = closedWithTime.length
+      ? closedWithTime.reduce((s,i) => s + (new Date(i.updatedAt) - new Date(i.createdAt)), 0) / closedWithTime.length
+      : -1;
+
+    // By category
+    const byCat = {};
+    issues.forEach(i => {
+      const k = i.catName || 'Unknown';
+      if(!byCat[k]) byCat[k] = {total:0, open:0, closed:0, critical:0};
+      byCat[k].total++;
+      if(i.status !== 'closed' && !i.archived) byCat[k].open++;
+      if(i.status === 'closed') byCat[k].closed++;
+      if(i.governingRating === 'critical') byCat[k].critical++;
+    });
+
+    // By nursery
+    const byNursery = {};
+    issues.forEach(i => {
+      const k = i.nursery || 'Unknown';
+      if(!byNursery[k]) byNursery[k] = {total:0, open:0, closed:0, avgCloseMs:[], critical:0};
+      byNursery[k].total++;
+      if(i.status !== 'closed' && !i.archived) byNursery[k].open++;
+      if(i.status === 'closed'){
+        byNursery[k].closed++;
+        if(i.createdAt && i.updatedAt) byNursery[k].avgCloseMs.push(new Date(i.updatedAt) - new Date(i.createdAt));
+      }
+      if(i.governingRating === 'critical') byNursery[k].critical++;
+    });
+
+    // By severity
+    const bySev = {critical:0, high:0, medium:0, low:0};
+    issues.forEach(i => { if(bySev[i.governingRating] !== undefined) bySev[i.governingRating]++; });
+
+    // ── Build email HTML ───────────────────────────────────────────────────
+    const catRows = Object.entries(byCat)
+      .sort((a,b) => b[1].total - a[1].total)
+      .map(([cat, s]) => `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${cat}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;">${s.total}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#d97706;">${s.open}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#16a34a;">${s.closed}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#dc2626;">${s.critical||0}</td>
+        </tr>`).join('');
+
+    const nurseryRows = Object.entries(byNursery)
+      .sort((a,b) => b[1].total - a[1].total)
+      .map(([nursery, s]) => {
+        const avg = s.avgCloseMs.length ? s.avgCloseMs.reduce((a,b)=>a+b,0)/s.avgCloseMs.length : -1;
+        return `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${nursery}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;">${s.total}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#d97706;">${s.open}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#16a34a;">${s.closed}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;">${fmtDur(avg)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;color:#dc2626;">${s.critical||0}</td>
+        </tr>`; }).join('');
+
+    const openIssueRows = open
+      .sort((a,b) => {
+        const sev = {critical:0,high:1,medium:2,low:3};
+        return (sev[a.governingRating]||9) - (sev[b.governingRating]||9);
+      })
+      .map(i => {
+        const age = fmtDur(now - new Date(i.createdAt));
+        const sevColour = {critical:'#dc2626',high:'#ea580c',medium:'#d97706',low:'#65a30d'}[i.governingRating] || '#888';
+        return `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;font-size:12px;color:#888;">${i.id}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${i.nursery}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${i.catName}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;color:${sevColour};font-weight:600;">${LEVEL_LABEL[i.governingRating]||i.governingRating}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${i.status}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;">${i.loggedBy}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e8e0d5;text-align:center;">${age}</td>
+        </tr>`; }).join('');
+
+    const emailHtml = `
+<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">
+  <div style="background:#3B1F6A;padding:18px 24px;border-radius:8px 8px 0 0;">
+    <img src="https://www.completechildcare.co.uk/img/logo.png" style="height:36px;" alt="Complete Childcare Group"/>
+  </div>
+  <div style="background:#F5EFE2;padding:24px;border-radius:0 0 8px 8px;border:1px solid #D8CDB5;">
+    <h2 style="color:#2A1450;margin:0 0 4px;">Issue Companion — Summary Report</h2>
+    <p style="color:#888;font-size:13px;margin:0 0 24px;">Generated ${now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} at ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</p>
+
+    <!-- KPI strip -->
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+      ${[['Total logged',total,'#3B1F6A'],['Open',open.length,'#d97706'],['Closed',closed.length,'#16a34a'],['Critical (open)',open.filter(i=>i.governingRating==='critical').length,'#dc2626'],['Avg time to close',fmtDur(avgCloseMs),'#555']].map(([lbl,val,col])=>`
+      <div style="background:#fff;border:1px solid #D8CDB5;border-radius:8px;padding:14px 18px;min-width:110px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:${col};">${val}</div>
+        <div style="font-size:11px;color:#888;margin-top:4px;">${lbl}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- By category -->
+    <h3 style="color:#2A1450;font-size:15px;margin:0 0 10px;">Issues by category</h3>
+    <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+      <thead><tr style="background:#3B1F6A;color:#fff;font-size:12px;">
+        <th style="padding:10px 12px;text-align:left;">Category</th>
+        <th style="padding:10px 12px;text-align:center;">Total</th>
+        <th style="padding:10px 12px;text-align:center;">Open</th>
+        <th style="padding:10px 12px;text-align:center;">Closed</th>
+        <th style="padding:10px 12px;text-align:center;">Critical</th>
+      </tr></thead>
+      <tbody>${catRows}</tbody>
+    </table>
+
+    <!-- By nursery -->
+    <h3 style="color:#2A1450;font-size:15px;margin:0 0 10px;">Issues by nursery / location</h3>
+    <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+      <thead><tr style="background:#3B1F6A;color:#fff;font-size:12px;">
+        <th style="padding:10px 12px;text-align:left;">Nursery</th>
+        <th style="padding:10px 12px;text-align:center;">Total</th>
+        <th style="padding:10px 12px;text-align:center;">Open</th>
+        <th style="padding:10px 12px;text-align:center;">Closed</th>
+        <th style="padding:10px 12px;text-align:center;">Avg close</th>
+        <th style="padding:10px 12px;text-align:center;">Critical</th>
+      </tr></thead>
+      <tbody>${nurseryRows}</tbody>
+    </table>
+
+    <!-- Open issues detail -->
+    <h3 style="color:#2A1450;font-size:15px;margin:0 0 10px;">All open issues (${open.length})</h3>
+    ${open.length ? `
+    <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+      <thead><tr style="background:#3B1F6A;color:#fff;font-size:12px;">
+        <th style="padding:10px 12px;text-align:left;">Ref</th>
+        <th style="padding:10px 12px;text-align:left;">Nursery</th>
+        <th style="padding:10px 12px;text-align:left;">Category</th>
+        <th style="padding:10px 12px;text-align:left;">Severity</th>
+        <th style="padding:10px 12px;text-align:left;">Status</th>
+        <th style="padding:10px 12px;text-align:left;">Logged by</th>
+        <th style="padding:10px 12px;text-align:center;">Age</th>
+      </tr></thead>
+      <tbody>${openIssueRows}</tbody>
+    </table>` : '<p style="color:#888;font-size:13px;">No open issues.</p>'}
+
+    <p style="margin:16px 0 0;font-size:11px;color:#888;">This is an on-demand summary from the CCG Issue Companion. Data is current as of the time this report was generated.</p>
+  </div>
+</div>`;
+
+    // Send to Alec
+    const subject = '[Issue Companion] Summary Report — ' + now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    await sendEmail('alec.hodson@completechildcare.co.uk', subject, emailHtml);
+    if(btn){ btn.textContent = '✓ Report sent'; setTimeout(()=>{ btn.disabled=false; btn.textContent='Email summary report'; }, 3000); }
+  } catch(e) {
+    console.error('[Report]', e);
+    alert('Could not generate report: ' + e.message);
+    if(btn){ btn.disabled=false; btn.textContent='Email summary report'; }
+  }
+}
+
 async function renderDashboard(){
   if(!(SESSION&&SESSION.canViewDashboard)){
     const el=document.getElementById('kpiGrid');
