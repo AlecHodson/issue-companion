@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Authenticating...</title>
+  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+</head>
+<body>
+  <p style="font-family:sans-serif;color:#666;text-align:center;margin-top:40px;">Signing in...</p>
+  <script>
+    // This page is opened as a popup by MSAL during loginPopup
+    // It handles the auth response and closes itself automatically
+    const CLIENT_ID = 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a';
+    const TENANT_ID = 'c498c1f7-99ac-42e6-bd6f-e819bf40f167';
+
+    const msalConfig = {
+      auth: {
+        clientId: CLIENT_ID,
+        authority: 'https://login.microsoftonline.com/' + TENANT_ID,
+        redirectUri: 'https://alechodson.github.io/issue-companion/auth.html',
+        navigateToLoginRequestUrl: false
+      },
+      cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+    };
+
+    const msalInstance = new msal.PublicClientApplication(msalConfig);
+    msalInstance.initialize().then(function() {
+      msalInstance.handleRedirectPromise().then(function(resp) {
+        // Token handled — popup will close automatically
+        if (resp) {
+          console.log('[AUTH] Token acquired in popup');
+        }
+      }).catch(function(e) {
+        console.warn('[AUTH] Error:', e);
+      });
+    });
+  </script>
+</body>
+</html>
