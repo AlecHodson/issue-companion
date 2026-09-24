@@ -1270,9 +1270,14 @@ async function getAllIssues(){
 
 async function getMyIssues(){
   const all = await getAllIssues();
-  if(!SESSION) return all;
+  if(!SESSION) return [];
+  // Management users with dashboard access see all issues in "My Issues"
   if(SESSION.canViewDashboard) return all;
-  return all.filter(i => i.nursery === SESSION.nursery);
+  // All other users: show only issues they personally logged
+  return all.filter(i => {
+    if(SESSION.email && i.loggedByEmail) return i.loggedByEmail.toLowerCase() === SESSION.email.toLowerCase();
+    return i.loggedBy === SESSION.name || i.nursery === SESSION.nursery;
+  });
 }
 
 async function writeIssue(issue){
