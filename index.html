@@ -2218,21 +2218,46 @@ async function msalSignIn() {
     const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
     const inTeams = typeof microsoftTeams !== 'undefined' && window.parent !== window;
     let resp;
-    if(inTeams){
-      await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint });
-      return; // page navigates
-    } else {
-      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+
+    // Step 1: Always try silent first (works in Edge when already signed in to M365)
+    const accounts = msalInstance.getAllAccounts();
+    if(accounts.length > 0){
+      try {
+        if(statusEl) statusEl.textContent = 'Signing in silently...';
+        resp = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+        console.log('[MSAL] Silent sign-in succeeded');
+      } catch(e){ console.warn('[MSAL] Silent failed, trying interactive:', e.message); resp = null; }
     }
+
+    // Step 2: Try ssoSilent with loginHint (works when M365 session exists in browser)
+    if(!resp && loginHint){
+      try {
+        if(statusEl) statusEl.textContent = 'Signing in with your M365 account...';
+        resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint });
+        console.log('[MSAL] ssoSilent succeeded');
+      } catch(e){ console.warn('[MSAL] ssoSilent failed:', e.message); resp = null; }
+    }
+
+    // Step 3: Interactive — redirect in Teams, popup in browser
+    if(!resp){
+      if(inTeams){
+        await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint, redirectUri: 'https://alechodson.github.io/issue-companion/' });
+        return;
+      } else {
+        if(statusEl) statusEl.textContent = 'Opening Microsoft sign-in...';
+        resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+      }
+    }
+
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     const user = matchUserByEmail(resp.account.username);
     SESSION = user || { name: resp.account.name, nursery: 'Complete Childcare Group', title: '', isHR: true, canViewDashboard: true, email: resp.account.username };
-    localStorage.setItem('icSession', JSON.stringify(SESSION));
+    try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
     document.getElementById('identityModal').classList.remove('active');
     applySession();
-    renderDashboard();
-    renderMyIssues();
+    if(typeof renderDashboard === 'function') renderDashboard();
+    if(typeof renderMyIssues === 'function') renderMyIssues();
   } catch(e) {
     console.warn('[MSAL] Login failed:', e.message);
     if(statusEl) statusEl.textContent = 'Sign-in failed. Please try the manual option below.';
