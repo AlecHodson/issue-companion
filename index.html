@@ -741,7 +741,7 @@ const MSAL_CONFIG = {
   auth: {
     clientId: 'c1c5c9f6-f764-4c66-b5ed-c5ac385f669a',
     authority: 'https://login.microsoftonline.com/c498c1f7-99ac-42e6-bd6f-e819bf40f167',
-    redirectUri: 'https://alechodson.github.io/issue-companion/',
+    redirectUri: 'https://alechodson.github.io/issue-companion/auth.html',
     navigateToLoginRequestUrl: false
   },
   cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
@@ -2201,7 +2201,7 @@ async function msalLoginWithTeamsFallback(scopes, loginHint) {
   const inTeams = typeof microsoftTeams !== 'undefined' && window.parent !== window;
   if (inTeams) {
     // Teams blocks popups — use redirect instead
-    await msalInstance.loginRedirect({ scopes, loginHint, prompt: 'select_account' });
+    await msalInstance.loginRedirect({ scopes, loginHint, prompt: 'select_account', redirectUri: 'https://alechodson.github.io/issue-companion/' });
     return null; // page will redirect, no return value
   } else {
     return await msalInstance.loginPopup({ scopes, loginHint });
