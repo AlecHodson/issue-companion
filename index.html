@@ -744,7 +744,7 @@ const MSAL_CONFIG = {
     redirectUri: 'https://alechodson.github.io/issue-companion/',
     navigateToLoginRequestUrl: false
   },
-  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+  cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
 };
 const GRAPH_SCOPES = ['User.Read', 'Files.ReadWrite.All', 'Mail.Send'];
 const DRIVE_ID = 'b!iJr5xECL0UOQJ9Tvhe9ldRBI2wy_aKhHrZwoRpGOclMsrpjKrYXdToViItPPv4Fn';
@@ -1066,7 +1066,7 @@ function applySearchHint(catId){
 /* ================================================================
    MSAL AUTH + GRAPH HELPERS
    ================================================================ */
-// Initialise MSAL synchronously so it is always available
+// Initialise MSAL — localStorage-backed, Teams-aware
 var msalInstance = null;
 (function tryInitMSAL(){
   if(typeof msal === 'undefined' || !msal.PublicClientApplication){
@@ -1076,27 +1076,56 @@ var msalInstance = null;
   try {
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     msalInstance.initialize().then(async function(){
-      // Handle redirect
-      try { await msalInstance.handleRedirectPromise(); } catch(e){}
-      // Try silent token for cached account
+      // Handle any post-redirect token first
+      try {
+        const redir = await msalInstance.handleRedirectPromise();
+        if(redir && redir.account){
+          graphToken = redir.accessToken;
+          tokenExpiry = redir.expiresOn ? redir.expiresOn.getTime() : Date.now()+3600000;
+          const user = matchUserByEmail(redir.account.username);
+          if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); return; }
+        }
+      } catch(e){ console.warn('[MSAL] Redirect handle:', e.message); }
+
+      // Try silent token from cached localStorage account
       const accounts = msalInstance.getAllAccounts();
       if(accounts.length > 0 && !graphToken){
         try {
           const silent = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
           graphToken = silent.accessToken;
           tokenExpiry = silent.expiresOn ? silent.expiresOn.getTime() : Date.now()+3600000;
-          console.log('[MSAL] Silent token acquired for', accounts[0].username);
-          // Auto-match session from M365 account
           if(!SESSION || !SESSION.email){
             const user = matchUserByEmail(accounts[0].username);
-            if(user){ SESSION = user; applySession(); }
+            if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); }
           }
+          return;
         } catch(e){ console.warn('[MSAL] Silent failed:', e.message); }
       }
-    }).catch(function(e){ console.error('MSAL init failed:', e); });
-  } catch(e) {
-    console.error('MSAL init failed:', e);
-  }
+
+      // Teams SSO — get loginHint from Teams context
+      if(typeof microsoftTeams !== 'undefined'){
+        try {
+          await microsoftTeams.app.initialize();
+          const ctx = await microsoftTeams.app.getContext();
+          const hint = ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
+          if(hint){
+            try {
+              const sso = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
+              graphToken = sso.accessToken;
+              tokenExpiry = sso.expiresOn ? sso.expiresOn.getTime() : Date.now()+3600000;
+              const user = matchUserByEmail(hint);
+              if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); return; }
+            } catch(e){
+              console.warn('[MSAL] Teams ssoSilent failed:', e.message);
+              // Fall through to redirect
+              try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint, prompt: 'none' }); return; } catch(e2){}
+              try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint }); return; } catch(e3){}
+            }
+          }
+        } catch(e){ console.warn('[MSAL] Teams init failed:', e.message); }
+      }
+    }).catch(function(e){ console.error('[MSAL] Init failed:', e); });
+  } catch(e) { console.error('[MSAL] Init failed:', e); }
 })();
 var graphToken = null;
 var tokenExpiry = 0;
@@ -1369,8 +1398,8 @@ function goBack(){
 /* ================================================================
    IDENTITY
    ================================================================ */
-function getStoredSession(){try{return JSON.parse(sessionStorage.getItem('icSession')||'null');}catch(e){return null;}}
-function storeSession(s){try{sessionStorage.setItem('icSession',JSON.stringify(s));}catch(e){}}
+function getStoredSession(){try{return JSON.parse(localStorage.getItem('icSession')||'null');}catch(e){return null;}}
+function storeSession(s){try{localStorage.setItem('icSession',JSON.stringify(s));}catch(e){}}
 
 function matchUserByEmail(email){
   if(!email) return null;
@@ -1410,7 +1439,7 @@ function confirmIdentity(){
 }
 
 function clearIdentity(){
-  try{sessionStorage.removeItem('icSession');}catch(e){}
+  try{localStorage.removeItem('icSession');}catch(e){}
   SESSION=null; graphToken=null;
   document.getElementById('identityModal').classList.add('active');
   populateIdentitySelect();
@@ -2188,12 +2217,19 @@ async function msalSignIn() {
   try {
     if(!msalInstance) throw new Error('Auth not ready — please wait a moment and try again.');
     const loginHint = SESSION && SESSION.email ? SESSION.email : undefined;
-    const resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    const inTeams = typeof microsoftTeams !== 'undefined' && window.parent !== window;
+    let resp;
+    if(inTeams){
+      await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint });
+      return; // page navigates
+    } else {
+      resp = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES, loginHint });
+    }
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     const user = matchUserByEmail(resp.account.username);
     SESSION = user || { name: resp.account.name, nursery: 'Complete Childcare Group', title: '', isHR: true, canViewDashboard: true, email: resp.account.username };
-    try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
+    localStorage.setItem('icSession', JSON.stringify(SESSION));
     document.getElementById('identityModal').classList.remove('active');
     applySession();
     renderDashboard();
@@ -2216,7 +2252,7 @@ function confirmIdentity() {
   const [type, idx] = val.split(':');
   const user = type === 'n' ? NURSERY_LIST[parseInt(idx)] : MGMT_LIST[parseInt(idx)];
   SESSION = user;
-  try { sessionStorage.setItem('icSession', JSON.stringify(user)); } catch(e){}
+  try { localStorage.setItem('icSession', JSON.stringify(user)); } catch(e){}
   document.getElementById('identityModal').classList.remove('active');
   applySession();
   renderDashboard();
@@ -2228,7 +2264,7 @@ function confirmIdentity() {
 }
 
 function clearIdentity() {
-  try { sessionStorage.removeItem('icSession'); } catch(e){}
+  try { localStorage.removeItem('icSession'); } catch(e){}
   SESSION = null; graphToken = null; tokenExpiry = 0;
   document.getElementById('identityModal').classList.add('active');
   populateIdentitySelect();
@@ -2238,7 +2274,7 @@ function clearIdentity() {
 (async function(){
   // 1. Check stored session
   try {
-    const stored = JSON.parse(sessionStorage.getItem('icSession') || 'null');
+    const stored = JSON.parse(localStorage.getItem('icSession') || 'null');
     if(stored && (stored.name || stored.nursery)){
       SESSION = stored;
     }
