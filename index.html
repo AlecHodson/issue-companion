@@ -386,6 +386,7 @@ textarea.desc-box:focus{outline:2px solid var(--purple-mid);outline-offset:1px;b
       <button data-page="allissues" onclick="showPage('allissues',this)"><span class="nav-icon">&#128196;</span> Current issues</button>
       <button data-page="archived" onclick="showPage('archived',this)"><span class="nav-icon">&#128451;</span> Archived issues</button>
       <button data-page="routing" onclick="showPage('routing',this)"><span class="nav-icon">&#128279;</span> Routing matrix</button>
+      <button id="summaryReportBtn" onclick="generateSummaryReport()" style="margin-top:8px;background:var(--amber-bright);color:var(--purple-deep);border:none;border-radius:8px;padding:11px 14px;font-family:var(--font-body);font-weight:700;font-size:13px;cursor:pointer;width:100%;text-align:left;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">&#128233;</span> Email summary report</button>
     </nav>
     <button id="summaryReportBtn" onclick="generateSummaryReport()" class="sidebar-copilot-btn"><span style="font-size:16px;">&#128233;</span><span class="sc-label">Email summary report<span class="sc-sub">Management only</span></span></button>
     <button class="sidebar-copilot-btn" onclick="openCopilotFromSidebar()">
@@ -2450,7 +2451,15 @@ async function msalSignIn() {
     graphToken = resp.accessToken;
     tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
     const user = matchUserByEmail(resp.account.username);
-    SESSION = user || { name: resp.account.name, nursery: 'Complete Childcare Group', title: '', isHR: true, canViewDashboard: true, email: resp.account.username };
+    SESSION = user || (() => {
+        // No exact match — build a best-guess session from the M365 account
+        const fallbackEmail = resp.account.username;
+        const fallbackName = resp.account.name;
+        // Try matching by name as a last resort
+        const nameMatch = [...MGMT_LIST, ...NURSERY_LIST].find(u => u.name && fallbackName && u.name.toLowerCase() === fallbackName.toLowerCase());
+        if(nameMatch) return Object.assign({}, nameMatch);
+        return { name: fallbackName, nursery: 'Complete Childcare Group', title: '', isHR: true, canViewDashboard: true, email: fallbackEmail, zone: '' };
+      })();
     try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
     document.getElementById('identityModal').classList.remove('active');
     applySession();
@@ -2501,6 +2510,12 @@ function clearIdentity() {
       SESSION = stored;
     }
   } catch(e){}
+
+  // Re-merge restored session with MGMT_LIST to pick up any fields added since last login
+  if(SESSION && SESSION.email){
+    const fresh = matchUserByEmail(SESSION.email);
+    if(fresh) SESSION = Object.assign({}, fresh, { name: SESSION.name || fresh.name });
+  }
 
   // Check for deep-link issue parameter (?issue=ISS-xxx)
   const _urlParams = new URLSearchParams(window.location.search);
