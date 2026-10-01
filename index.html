@@ -1078,7 +1078,7 @@ function isInTeamsFrame(){
 // handshake (e.g. the app was opened directly in a browser tab). Always race it against a timeout
 // so startup and sign-in can never stall waiting on it.
 function teamsInitializeWithTimeout(ms){
-  ms = ms || 3000;
+  ms = ms || 8000;
   return Promise.race([
     microsoftTeams.app.initialize(),
     new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('Teams initialize timed out')); }, ms); })
@@ -2579,7 +2579,7 @@ function clearIdentity() {
             graphToken = resp.accessToken;
             tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
             console.log('[INIT] Got token via Teams ssoSilent');
-          } catch(e){ console.warn('[INIT] Teams ssoSilent failed (expected) — using identity-only sign-in:', e.message); }
+          } catch(e){ console.warn('[INIT] Teams ssoSilent failed (expected — Teams often blocks the silent iframe) — using identity-only sign-in:', e.message); }
 
           // Step B: Whether or not we got a token, match the Teams UPN to a known user
           // This allows sign-in in Teams even when MSAL interactive auth is blocked
@@ -2589,8 +2589,12 @@ function clearIdentity() {
               SESSION = user;
               try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
               console.log('[INIT] Teams identity matched to user:', SESSION.name);
+            } else {
+              console.warn('[INIT] Teams supplied an identity hint ("' + hint + '") but no matching user record was found in MGMT_LIST/NURSERY_LIST — add this email to the user list to enable auto sign-in for them.');
             }
           }
+        } else {
+          console.warn('[INIT] Teams context returned no user hint (userPrincipalName/loginHint) — auto sign-in cannot proceed. This usually means the Teams app registration (manifest validDomains / webApplicationInfo) is not fully configured for this tab.');
         }
       } catch(e){ console.warn('[INIT] Teams SDK failed:', e.message); }
     }
@@ -2610,6 +2614,24 @@ function clearIdentity() {
           console.log('[INIT] Got token silently from cached account');
         } catch(e){ console.warn('[INIT] Silent failed:', e.message); }
       }
+    }
+
+    // Browser only (no Teams, no cached MSAL account yet): try a fully silent SSO check against
+    // the browser's existing Microsoft 365 session, so a returning M365-signed-in user never has
+    // to click "Sign in with M365" at all. This relies on the active AAD session cookie, not on
+    // any prior MSAL login, so it also covers a user's very first visit on a signed-in device.
+    if(!graphToken && !isInTeamsFrame()){
+      try {
+        const hint = SESSION && SESSION.email ? SESSION.email : undefined;
+        const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
+        graphToken = resp.accessToken;
+        tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
+        if(!SESSION || !SESSION.email){
+          const user = matchUserByEmail(resp.account.username);
+          if(user){ SESSION = user; try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){} }
+        }
+        console.log('[INIT] Got token via browser ssoSilent — no sign-in click needed');
+      } catch(e){ console.warn('[INIT] Browser ssoSilent found no active M365 session (user must sign in manually):', e.message); }
     }
   }
 
