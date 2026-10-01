@@ -1068,6 +1068,22 @@ function applySearchHint(catId){
 /* ================================================================
    MSAL AUTH + GRAPH HELPERS
    ================================================================ */
+// Detect whether the app is genuinely running inside a host frame (Teams desktop/web/mobile),
+// not just whether the Teams SDK script happens to be loaded (it always is, even in a plain browser tab).
+function isInTeamsFrame(){
+  try { return window.parent !== window || window.self !== window.top; }
+  catch(e){ return true; } // cross-origin access throws when framed — treat as framed
+}
+// Teams SDK's app.initialize() can hang indefinitely if there is no real Teams host to answer the
+// handshake (e.g. the app was opened directly in a browser tab). Always race it against a timeout
+// so startup and sign-in can never stall waiting on it.
+function teamsInitializeWithTimeout(ms){
+  ms = ms || 3000;
+  return Promise.race([
+    microsoftTeams.app.initialize(),
+    new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('Teams initialize timed out')); }, ms); })
+  ]);
+}
 // Initialise MSAL — localStorage-backed, Teams-aware
 var msalInstance = null;
 (function tryInitMSAL(){
@@ -1105,9 +1121,9 @@ var msalInstance = null;
       }
 
       // Teams SSO — get loginHint from Teams context
-      if(typeof microsoftTeams !== 'undefined'){
+      if(typeof microsoftTeams !== 'undefined' && isInTeamsFrame()){
         try {
-          await microsoftTeams.app.initialize();
+          await teamsInitializeWithTimeout();
           const ctx = await microsoftTeams.app.getContext();
           const hint = ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
           if(hint){
@@ -2445,7 +2461,7 @@ async function msalSignIn() {
       if(inTeams){
         // In Teams, loginRedirect/loginPopup both fail — try to get Teams UPN and match identity
         try {
-          await microsoftTeams.app.initialize();
+          await teamsInitializeWithTimeout();
           const ctx = await microsoftTeams.app.getContext();
           const teamsHint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
           if(teamsHint){
@@ -2551,9 +2567,9 @@ function clearIdentity() {
     } catch(e){}
 
     // Try Teams SSO — get UPN from Teams context, match against user list
-    if(typeof microsoftTeams !== 'undefined'){
+    if(typeof microsoftTeams !== 'undefined' && isInTeamsFrame()){
       try {
-        await microsoftTeams.app.initialize();
+        await teamsInitializeWithTimeout();
         const ctx = await microsoftTeams.app.getContext();
         const hint = ctx.user && (ctx.user.userPrincipalName || ctx.user.loginHint);
         if(hint){
