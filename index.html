@@ -1078,7 +1078,7 @@ function isInTeamsFrame(){
 // handshake (e.g. the app was opened directly in a browser tab). Always race it against a timeout
 // so startup and sign-in can never stall waiting on it.
 function teamsInitializeWithTimeout(ms){
-  ms = ms || 8000;
+  ms = ms || 3000;
   return Promise.race([
     microsoftTeams.app.initialize(),
     new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('Teams initialize timed out')); }, ms); })
@@ -1094,53 +1094,21 @@ var msalInstance = null;
   try {
     msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
     msalInstance.initialize().then(async function(){
-      // Handle any post-redirect token first
+      // Handle any pending post-redirect token. This must run once at startup before any other
+      // MSAL calls. The full silent/SSO sign-in attempt (cached account, browser SSO, Teams SSO)
+      // runs once in the main startup sequence further down the page — it is deliberately NOT
+      // duplicated here, to avoid two competing silent/iframe requests racing each other, and to
+      // avoid ever calling loginRedirect() from inside a Teams tab iframe (Azure AD blocks being
+      // framed, which can leave the Teams tab stuck mid-navigation instead of signing in).
       try {
         const redir = await msalInstance.handleRedirectPromise();
         if(redir && redir.account){
           graphToken = redir.accessToken;
           tokenExpiry = redir.expiresOn ? redir.expiresOn.getTime() : Date.now()+3600000;
           const user = matchUserByEmail(redir.account.username);
-          if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); return; }
+          if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); }
         }
       } catch(e){ console.warn('[MSAL] Redirect handle:', e.message); }
-
-      // Try silent token from cached localStorage account
-      const accounts = msalInstance.getAllAccounts();
-      if(accounts.length > 0 && !graphToken){
-        try {
-          const silent = await msalInstance.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
-          graphToken = silent.accessToken;
-          tokenExpiry = silent.expiresOn ? silent.expiresOn.getTime() : Date.now()+3600000;
-          if(!SESSION || !SESSION.email){
-            const user = matchUserByEmail(accounts[0].username);
-            if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); }
-          }
-          return;
-        } catch(e){ console.warn('[MSAL] Silent failed:', e.message); }
-      }
-
-      // Teams SSO — get loginHint from Teams context
-      if(typeof microsoftTeams !== 'undefined' && isInTeamsFrame()){
-        try {
-          await teamsInitializeWithTimeout();
-          const ctx = await microsoftTeams.app.getContext();
-          const hint = ctx.user && (ctx.user.loginHint || ctx.user.userPrincipalName);
-          if(hint){
-            try {
-              const sso = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
-              graphToken = sso.accessToken;
-              tokenExpiry = sso.expiresOn ? sso.expiresOn.getTime() : Date.now()+3600000;
-              const user = matchUserByEmail(hint);
-              if(user){ SESSION = user; localStorage.setItem('icSession', JSON.stringify(user)); applySession(); renderDashboard(); renderMyIssues(); return; }
-            } catch(e){
-              console.warn('[MSAL] Teams ssoSilent failed:', e.message);
-              try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint, prompt: 'none' }); return; } catch(e2){}
-              try { await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES, loginHint: hint }); return; } catch(e3){}
-            }
-          }
-        } catch(e){ console.warn('[MSAL] Teams init failed:', e.message); }
-      }
     }).catch(function(e){ console.error('[MSAL] Init failed:', e); });
   } catch(e) { console.error('[MSAL] Init failed:', e); }
 })();
@@ -2579,7 +2547,7 @@ function clearIdentity() {
             graphToken = resp.accessToken;
             tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
             console.log('[INIT] Got token via Teams ssoSilent');
-          } catch(e){ console.warn('[INIT] Teams ssoSilent failed (expected — Teams often blocks the silent iframe) — using identity-only sign-in:', e.message); }
+          } catch(e){ console.warn('[INIT] Teams ssoSilent failed (expected) — using identity-only sign-in:', e.message); }
 
           // Step B: Whether or not we got a token, match the Teams UPN to a known user
           // This allows sign-in in Teams even when MSAL interactive auth is blocked
@@ -2589,12 +2557,8 @@ function clearIdentity() {
               SESSION = user;
               try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){}
               console.log('[INIT] Teams identity matched to user:', SESSION.name);
-            } else {
-              console.warn('[INIT] Teams supplied an identity hint ("' + hint + '") but no matching user record was found in MGMT_LIST/NURSERY_LIST — add this email to the user list to enable auto sign-in for them.');
             }
           }
-        } else {
-          console.warn('[INIT] Teams context returned no user hint (userPrincipalName/loginHint) — auto sign-in cannot proceed. This usually means the Teams app registration (manifest validDomains / webApplicationInfo) is not fully configured for this tab.');
         }
       } catch(e){ console.warn('[INIT] Teams SDK failed:', e.message); }
     }
@@ -2616,22 +2580,22 @@ function clearIdentity() {
       }
     }
 
-    // Browser only (no Teams, no cached MSAL account yet): try a fully silent SSO check against
-    // the browser's existing Microsoft 365 session, so a returning M365-signed-in user never has
-    // to click "Sign in with M365" at all. This relies on the active AAD session cookie, not on
-    // any prior MSAL login, so it also covers a user's very first visit on a signed-in device.
+    // Try silent SSO using the browser's own Microsoft 365 session — this works even on a user's
+    // very first visit, with no prior sign-in to this app, as long as they are already signed in
+    // to Microsoft 365 somewhere in this browser (Outlook on the web, Office.com, another M365 tab,
+    // etc.). This is what lets the app find their identity automatically instead of requiring the
+    // "Sign in with Microsoft 365" button to be clicked.
     if(!graphToken && !isInTeamsFrame()){
       try {
-        const hint = SESSION && SESSION.email ? SESSION.email : undefined;
-        const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: hint });
+        const resp = await msalInstance.ssoSilent({ scopes: GRAPH_SCOPES, loginHint: (SESSION && SESSION.email) || undefined });
         graphToken = resp.accessToken;
         tokenExpiry = resp.expiresOn ? resp.expiresOn.getTime() : Date.now()+3600000;
         if(!SESSION || !SESSION.email){
           const user = matchUserByEmail(resp.account.username);
-          if(user){ SESSION = user; try { sessionStorage.setItem('icSession', JSON.stringify(SESSION)); } catch(e){} }
+          if(user) SESSION = user;
         }
-        console.log('[INIT] Got token via browser ssoSilent — no sign-in click needed');
-      } catch(e){ console.warn('[INIT] Browser ssoSilent found no active M365 session (user must sign in manually):', e.message); }
+        console.log('[INIT] Got token via browser ssoSilent — existing M365 session detected automatically');
+      } catch(e){ console.warn('[INIT] Browser ssoSilent failed — no existing M365 session detected in this browser:', e.message); }
     }
   }
 
